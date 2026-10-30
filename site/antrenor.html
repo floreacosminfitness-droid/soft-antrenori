@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cont de antrenor</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="assets/app.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/config.js"></script>
+<script src="assets/common.js"></script>
+</head>
+<body>
+<div id="loading" class="loading">Se încarcă…</div>
+
+<!-- ============ ÎNREGISTRARE ANTRENOR ============ -->
+<main id="vSignup" class="wrap narrow" hidden>
+  <div class="card">
+    <h1>Creează cont de antrenor</h1>
+    <p class="muted">Clienții tăi primesc automat planul alimentar, iar tu îi urmărești pe toți dintr-un singur loc.</p>
+    <p id="suMsg" class="msg" hidden></p>
+    <form id="fSignup" novalidate>
+      <div class="field"><label for="suName">Numele afișat clienților</label><input id="suName" type="text" maxlength="80" placeholder="de exemplu Andrei Ionescu Coaching" required></div>
+      <div class="field"><label for="suEmail">Email</label><input id="suEmail" type="email" autocomplete="email" required></div>
+      <div class="field"><label for="suPass">Parola (minim 8 caractere)</label><input id="suPass" type="password" autocomplete="new-password" minlength="8" required></div>
+      <button class="btn btn-block" type="submit">Creează contul</button>
+    </form>
+    <p class="small muted center" style="margin:14px 0 0">Ai deja cont? <a href="index.html">Intră în cont</a></p>
+  </div>
+</main>
+
+<main id="vCheckEmail" class="wrap narrow" hidden>
+  <div class="card center">
+    <h1>Verifică emailul</h1>
+    <p>Ți-am trimis un link de confirmare la <b id="ceEmail"></b>. Apasă pe el și ajungi direct în contul tău.</p>
+    <p class="small muted">Nu l-ai primit? Uită-te și în Spam sau Promoții.</p>
+  </div>
+</main>
+
+<!-- ============ PANOUL ANTRENORULUI ============ -->
+<div id="vApp" hidden>
+  <header class="topbar">
+    <div class="brand"><span id="tbLogo"></span><span id="tbName"></span></div>
+    <div class="spacer"></div>
+    <button class="btn btn-ghost btn-sm" id="logout" type="button">Ieși</button>
+  </header>
+
+  <main class="wrap stack">
+    <section class="card">
+      <h2>Link-ul tău de invitare</h2>
+      <p class="muted small">Trimite-l clienților. Își fac singuri cont, completează datele și primesc planul. Apar apoi mai jos, în lista ta.</p>
+      <div class="invite"><span id="invLink" style="flex:1"></span></div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn btn-sm" id="copyLink" type="button">Copiază link-ul</button>
+        <a class="btn btn-ghost btn-sm" id="waLink" target="_blank" rel="noopener">Trimite pe WhatsApp</a>
+        <div class="spacer"></div>
+        <span class="small muted">Cod: <span class="code" id="invCode"></span></span>
+      </div>
+      <p id="invMsg" class="msg" hidden style="margin-top:12px"></p>
+      <p class="small muted" style="margin:12px 0 0">Link-ul a ajuns la cine nu trebuie? <button class="linkbtn" id="regen" type="button">Generează un link nou</button>. Cel vechi nu mai funcționează; clienții deja înscriși rămân.</p>
+    </section>
+
+    <section class="card">
+      <div class="row" style="margin-bottom:12px">
+        <h2 style="margin:0">Clienții tăi</h2>
+        <div class="spacer"></div>
+        <label class="check" style="margin:0"><input type="checkbox" id="showArch"> Arată și arhivații</label>
+      </div>
+      <div class="stats" style="margin-bottom:8px">
+        <div class="stat"><b id="stActive">0</b><span>activi</span></div>
+        <div class="stat"><b id="stArch">0</b><span>arhivați</span></div>
+      </div>
+      <p id="clMsg" class="msg" hidden></p>
+      <p id="clEmpty" class="muted" hidden>Niciun client încă. Trimite link-ul de mai sus primului client.</p>
+      <ul class="list" id="clList"></ul>
+      <p class="small muted" style="margin:12px 0 0">Graficele de greutate, cât respectă planul și alertele vin în etapa următoare. Clienții arhivați nu se mai numără la abonament, iar istoricul lor rămâne.</p>
+    </section>
+
+    <section class="card">
+      <h2>Cum te văd clienții</h2>
+      <p class="muted small">Numele și logo-ul tău apar pe pagina de înscriere și în contul fiecărui client, în locul numelui programului.</p>
+      <p id="prMsg" class="msg" hidden></p>
+      <div class="grid grid-2">
+        <form id="fName" novalidate>
+          <div class="field"><label for="prName">Numele afișat</label><input id="prName" type="text" maxlength="80" required></div>
+          <button class="btn btn-sm" type="submit">Salvează numele</button>
+        </form>
+        <div>
+          <label>Logo</label>
+          <div class="row">
+            <span id="prLogo"></span>
+            <div>
+              <input id="prFile" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+              <button class="btn btn-ghost btn-sm" id="pickLogo" type="button">Încarcă logo</button>
+              <button class="linkbtn small" id="rmLogo" type="button" hidden>Scoate logo-ul</button>
+              <p class="small muted" style="margin:6px 0 0">PNG, JPG sau WEBP, maximum 1 MB. Ideal pătrat.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+(async function () {
+  if (!App.configured) return App.notConfigured();
+  var $ = App.$, sb = App.sb, esc = App.esc;
+  var me = null, clients = [];
+
+  function view(id) {
+    ['loading', 'vSignup', 'vCheckEmail', 'vApp'].forEach(function (v) { App.show($(v), v === id); });
+  }
+
+  function logoHtml(url, name, big) {
+    var cls = 'logo' + (big ? ' logo-lg' : '');
+    if (url) return '<img class="' + cls + '" src="' + esc(url) + '" alt="">';
+    var ini = (name || '?').trim().split(/\s+/).slice(0, 2).map(function (w) { return w[0]; }).join('').toUpperCase();
+    return '<span class="' + cls + ' logo-ph">' + esc(ini) + '</span>';
+  }
+
+  function inviteUrl() { return App.base() + 'inscriere.html?c=' + encodeURIComponent(me.invite_code); }
+
+  function renderMe() {
+    document.title = me.display_name + ' · ' + App.config.APP_NAME;
+    $('tbLogo').innerHTML = logoHtml(me.logo_url, me.display_name);
+    $('tbName').textContent = me.display_name;
+    $('invLink').textContent = inviteUrl();
+    $('invCode').textContent = me.invite_code;
+    var text = 'Salut! Îți fac contul pentru planul alimentar. Intră aici, completează datele și primești planul imediat: ' + inviteUrl();
+    $('waLink').href = 'https://wa.me/?text=' + encodeURIComponent(text);
+    $('prName').value = me.display_name;
+    $('prLogo').innerHTML = logoHtml(me.logo_url, me.display_name, true);
+    App.show($('rmLogo'), !!me.logo_url);
+  }
+
+  function renderClients() {
+    var showArch = $('showArch').checked;
+    var active = clients.filter(function (c) { return c.status === 'active'; });
+    var arch = clients.filter(function (c) { return c.status === 'archived'; });
+    $('stActive').textContent = active.length;
+    $('stArch').textContent = arch.length;
+    var shown = showArch ? active.concat(arch) : active;
+    App.show($('clEmpty'), clients.length === 0);
+    $('clList').innerHTML = shown.map(function (c) {
+      var isArch = c.status === 'archived';
+      return '<li>' +
+        '<div class="who"><b>' + esc(c.full_name) + (isArch ? ' <span class="badge">arhivat</span>' : '') + '</b>' +
+        '<span class="small muted">Înscris pe ' + App.fmtDate(c.joined_at) + ' · ultima intrare: ' + App.ago(c.last_seen_at) + '</span></div>' +
+        '<button class="btn btn-ghost btn-sm" type="button" data-id="' + esc(c.id) + '" data-to="' + (isArch ? 'active' : 'archived') + '">' +
+        (isArch ? 'Reactivează' : 'Arhivează') + '</button></li>';
+    }).join('');
+  }
+
+  async function loadClients() {
+    var r = await sb.from('clients').select('id,full_name,status,joined_at,archived_at,last_seen_at').order('joined_at', { ascending: false });
+    if (r.error) return App.msg($('clMsg'), App.ro(r.error));
+    App.msg($('clMsg'), '');
+    clients = r.data;
+    renderClients();
+  }
+
+  async function start() {
+    var acc = await App.account();
+    if (!acc) return view('vSignup');
+    if (acc.role === 'client') return location.replace('client.html');
+    if (acc.role !== 'trainer') { await sb.auth.signOut(); return view('vSignup'); }
+    me = acc.trainer;
+    renderMe();
+    view('vApp');
+    loadClients();
+  }
+
+  // ---- înregistrare ----
+  $('fSignup').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var b = e.target.querySelector('button');
+    var name = $('suName').value.trim(), email = $('suEmail').value.trim(), pass = $('suPass').value;
+    if (name.length < 2) return App.msg($('suMsg'), 'Scrie numele pe care îl vor vedea clienții.');
+    if (!/^\S+@\S+\.\S+$/.test(email)) return App.msg($('suMsg'), 'Scrie o adresă de email corectă.');
+    if (pass.length < 8) return App.msg($('suMsg'), 'Parola trebuie să aibă cel puțin 8 caractere.');
+    b.disabled = true; App.msg($('suMsg'), '');
+    var r = await sb.auth.signUp({
+      email: email, password: pass,
+      options: { data: { role: 'trainer', name: name }, emailRedirectTo: App.base() + 'antrenor.html' }
+    });
+    if (r.error) { b.disabled = false; return App.msg($('suMsg'), App.ro(r.error)); }
+    // Supabase nu spune direct dacă emailul exista deja; un cont fără identități înseamnă asta.
+    if (r.data.user && r.data.user.identities && r.data.user.identities.length === 0) {
+      b.disabled = false;
+      return App.msg($('suMsg'), 'Există deja un cont cu acest email. Intră în cont sau folosește „Am uitat parola”.');
+    }
+    if (r.data.session) return start();
+    $('ceEmail').textContent = email;
+    view('vCheckEmail');
+  });
+
+  // ---- link de invitare ----
+  $('copyLink').onclick = async function () {
+    try { await navigator.clipboard.writeText(inviteUrl()); App.msg($('invMsg'), 'Link copiat.', 'ok'); }
+    catch (e) { App.msg($('invMsg'), 'Nu am putut copia automat; selectează link-ul și copiază-l.', 'info'); }
+    setTimeout(function () { App.msg($('invMsg'), ''); }, 2500);
+  };
+
+  $('regen').onclick = async function () {
+    if (!confirm('Generezi un link nou? Link-ul vechi nu va mai funcționa pentru înscrieri noi.')) return;
+    var r = await sb.rpc('regenerate_invite_code');
+    if (r.error) return App.msg($('invMsg'), App.ro(r.error));
+    me.invite_code = r.data;
+    renderMe();
+    App.msg($('invMsg'), 'Gata, ai un link nou. Trimite-l pe acesta de acum înainte.', 'ok');
+  };
+
+  // ---- clienți ----
+  $('showArch').onchange = renderClients;
+  $('clList').addEventListener('click', async function (e) {
+    var b = e.target.closest('button[data-id]');
+    if (!b) return;
+    var to = b.getAttribute('data-to'), c = clients.find(function (x) { return x.id === b.getAttribute('data-id'); });
+    if (to === 'archived' && !confirm('Arhivezi pe ' + c.full_name + '? Nu se mai numără la abonament, iar istoricul rămâne. Îl poți reactiva oricând.')) return;
+    b.disabled = true;
+    var r = await sb.from('clients').update({ status: to }).eq('id', c.id).select('id,full_name,status,joined_at,archived_at,last_seen_at').single();
+    if (r.error) { b.disabled = false; return App.msg($('clMsg'), App.ro(r.error)); }
+    Object.assign(c, r.data);
+    renderClients();
+  });
+
+  // ---- profil ----
+  $('fName').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var name = $('prName').value.trim();
+    if (name.length < 2) return App.msg($('prMsg'), 'Numele trebuie să aibă cel puțin 2 caractere.');
+    var r = await sb.from('trainers').update({ display_name: name }).eq('id', me.id).select('display_name').single();
+    if (r.error) return App.msg($('prMsg'), App.ro(r.error));
+    me.display_name = r.data.display_name; renderMe();
+    App.msg($('prMsg'), 'Numele a fost salvat.', 'ok');
+  });
+
+  $('pickLogo').onclick = function () { $('prFile').click(); };
+
+  async function removeOldLogos(keepPath) {
+    var l = await sb.storage.from('logos').list(me.id);
+    if (l.error || !l.data) return;
+    var old = l.data.map(function (f) { return me.id + '/' + f.name; }).filter(function (p) { return p !== keepPath; });
+    if (old.length) await sb.storage.from('logos').remove(old);
+  }
+
+  $('prFile').onchange = async function () {
+    var f = this.files[0]; this.value = '';
+    if (!f) return;
+    if (['image/png', 'image/jpeg', 'image/webp'].indexOf(f.type) < 0) return App.msg($('prMsg'), 'Logo-ul trebuie să fie PNG, JPG sau WEBP.');
+    if (f.size > 1048576) return App.msg($('prMsg'), 'Logo-ul e prea mare; maximum 1 MB.');
+    var ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }[f.type];
+    var path = me.id + '/logo-' + Date.now() + '.' + ext;
+    $('pickLogo').disabled = true; App.msg($('prMsg'), 'Se încarcă…', 'info');
+    var up = await sb.storage.from('logos').upload(path, f, { contentType: f.type, cacheControl: '31536000', upsert: false });
+    if (up.error) { $('pickLogo').disabled = false; return App.msg($('prMsg'), App.ro(up.error)); }
+    var url = sb.storage.from('logos').getPublicUrl(path).data.publicUrl;
+    var r = await sb.from('trainers').update({ logo_url: url }).eq('id', me.id).select('logo_url').single();
+    $('pickLogo').disabled = false;
+    if (r.error) return App.msg($('prMsg'), App.ro(r.error));
+    me.logo_url = r.data.logo_url; renderMe();
+    App.msg($('prMsg'), 'Logo-ul a fost salvat.', 'ok');
+    removeOldLogos(path);
+  };
+
+  $('rmLogo').onclick = async function () {
+    var r = await sb.from('trainers').update({ logo_url: null }).eq('id', me.id);
+    if (r.error) return App.msg($('prMsg'), App.ro(r.error));
+    me.logo_url = null; renderMe();
+    App.msg($('prMsg'), 'Logo-ul a fost scos.', 'ok');
+    removeOldLogos(null);
+  };
+
+  $('logout').onclick = async function () { await sb.auth.signOut(); location.replace('index.html'); };
+
+  try { await start(); }
+  catch (e) { view('vSignup'); App.msg($('suMsg'), App.ro(e)); }
+})();
+</script>
+</body>
+</html>

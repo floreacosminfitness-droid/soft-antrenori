@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Înscriere</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="assets/app.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/config.js"></script>
+<script src="assets/common.js"></script>
+</head>
+<body>
+<main class="wrap narrow">
+  <div id="loading" class="loading">Se încarcă…</div>
+
+  <section id="vBad" class="card center" hidden>
+    <h1>Link-ul nu mai e valabil</h1>
+    <p>Cere-i antrenorului tău link-ul de înscriere actual.</p>
+    <p class="small muted">Ai deja cont? <a href="index.html">Intră în cont</a></p>
+  </section>
+
+  <section id="vForm" class="card" hidden>
+    <div class="center" style="margin-bottom:16px">
+      <div id="trLogo" style="display:flex;justify-content:center;margin-bottom:12px"></div>
+      <p class="muted small" style="margin:0">Te înscrii la</p>
+      <h1 id="trName" style="margin:2px 0 8px"></h1>
+      <p class="muted small" style="margin:0">Îți faci contul, completezi câteva date și primești imediat planul alimentar pe 7 zile.</p>
+    </div>
+    <p id="fMsg" class="msg" hidden></p>
+    <form id="fJoin" novalidate>
+      <div class="field"><label for="jName">Numele tău</label><input id="jName" type="text" autocomplete="name" maxlength="80" required></div>
+      <div class="field"><label for="jEmail">Email</label><input id="jEmail" type="email" autocomplete="email" required></div>
+      <div class="field"><label for="jPass">Parola (minim 8 caractere)</label><input id="jPass" type="password" autocomplete="new-password" minlength="8" required></div>
+      <div class="field">
+        <label class="check"><input type="checkbox" id="jShare"> <span>Sunt de acord ca <b id="trName2"></b> să vadă datele pe care le introduc aici (greutate, mese, plan), ca să mă poată urmări.</span></label>
+      </div>
+      <button class="btn btn-block" type="submit">Creează contul</button>
+    </form>
+    <p class="small muted center" style="margin:14px 0 0">Ai deja cont? <a href="index.html">Intră în cont</a></p>
+  </section>
+
+  <section id="vCheckEmail" class="card center" hidden>
+    <h1>Verifică emailul</h1>
+    <p>Ți-am trimis un link de confirmare la <b id="ceEmail"></b>. Apasă pe el și continui cu datele pentru plan.</p>
+    <p class="small muted">Nu l-ai primit? Uită-te și în Spam sau Promoții.</p>
+  </section>
+</main>
+
+<script>
+(async function () {
+  if (!App.configured) return App.notConfigured();
+  var $ = App.$, sb = App.sb, esc = App.esc;
+  var code = (new URLSearchParams(location.search).get('c') || '').trim().toUpperCase();
+
+  function view(id) {
+    ['loading', 'vBad', 'vForm', 'vCheckEmail'].forEach(function (v) { App.show($(v), v === id); });
+  }
+
+  try {
+    var s = await sb.auth.getSession();
+    if (s.data.session) {
+      var acc = await App.account();
+      if (acc && acc.role) return location.replace(App.homeFor(acc.role));
+    }
+    if (!/^[A-Z0-9]{6}$/.test(code)) return view('vBad');
+    var r = await sb.rpc('trainer_public', { code: code });
+    if (r.error) throw r.error;
+    if (!r.data || !r.data.length) return view('vBad');
+    var t = r.data[0];
+    document.title = 'Înscriere · ' + t.display_name;
+    $('trName').textContent = t.display_name;
+    $('trName2').textContent = t.display_name;
+    $('trLogo').innerHTML = t.logo_url
+      ? '<img class="logo logo-lg" src="' + esc(t.logo_url) + '" alt="">'
+      : '';
+    view('vForm');
+  } catch (e) {
+    view('vForm'); App.msg($('fMsg'), App.ro(e));
+  }
+
+  $('fJoin').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var b = e.target.querySelector('button');
+    var name = $('jName').value.trim(), email = $('jEmail').value.trim(), pass = $('jPass').value;
+    if (name.length < 2) return App.msg($('fMsg'), 'Scrie-ți numele.');
+    if (!/^\S+@\S+\.\S+$/.test(email)) return App.msg($('fMsg'), 'Scrie o adresă de email corectă.');
+    if (pass.length < 8) return App.msg($('fMsg'), 'Parola trebuie să aibă cel puțin 8 caractere.');
+    if (!$('jShare').checked) return App.msg($('fMsg'), 'Ca să te poată urmări, antrenorul trebuie să-ți vadă datele. Bifează acordul ca să continui.');
+    b.disabled = true; App.msg($('fMsg'), '');
+    var r = await sb.auth.signUp({
+      email: email, password: pass,
+      options: { data: { role: 'client', name: name, invite_code: code }, emailRedirectTo: App.base() + 'client.html' }
+    });
+    if (r.error) { b.disabled = false; return App.msg($('fMsg'), App.ro(r.error)); }
+    if (r.data.user && r.data.user.identities && r.data.user.identities.length === 0) {
+      b.disabled = false;
+      return App.msg($('fMsg'), 'Există deja un cont cu acest email. Intră în cont sau folosește „Am uitat parola”.');
+    }
+    if (r.data.session) return location.replace('client.html');
+    $('ceEmail').textContent = email;
+    view('vCheckEmail');
+  });
+})();
+</script>
+</body>
+</html>

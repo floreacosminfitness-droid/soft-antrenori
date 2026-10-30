@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contul meu</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="assets/app.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/config.js"></script>
+<script src="assets/common.js"></script>
+</head>
+<body>
+<div id="loading" class="loading">Se încarcă…</div>
+
+<div id="vApp" hidden>
+  <header class="topbar">
+    <div class="brand"><span id="tbLogo"></span><span id="tbName"></span></div>
+    <div class="spacer"></div>
+    <button class="btn btn-ghost btn-sm" id="logout" type="button">Ieși</button>
+  </header>
+
+  <main class="wrap narrow stack">
+    <section class="card">
+      <h1 id="hello"></h1>
+      <p class="muted" style="margin:0">Contul tău e legat de <b id="trName"></b>.</p>
+    </section>
+
+    <!-- Etapa 2 pune aici: calculatorul, preferințele și planul pe 7 zile -->
+    <section class="card" id="planSlot">
+      <h2>Planul tău alimentar</h2>
+      <p class="muted" style="margin:0">Aici vor apărea în curând calculatorul, preferințele și planul tău pe 7 zile.</p>
+    </section>
+
+    <section id="vArchived" class="card" hidden>
+      <p class="muted" style="margin:0">Colaborarea cu antrenorul tău s-a încheiat, dar istoricul tău rămâne aici.</p>
+    </section>
+  </main>
+</div>
+
+<script>
+(async function () {
+  if (!App.configured) return App.notConfigured();
+  var $ = App.$, sb = App.sb, esc = App.esc;
+
+  try {
+    var acc = await App.account();
+    if (!acc) return location.replace('index.html');
+    if (acc.role === 'trainer') return location.replace('antrenor.html');
+    if (acc.role !== 'client') { await sb.auth.signOut(); return location.replace('index.html'); }
+
+    var t = acc.trainer, c = acc.client;
+    document.title = t.display_name;
+    $('tbLogo').innerHTML = t.logo_url ? '<img class="logo" src="' + esc(t.logo_url) + '" alt="">' : '';
+    $('tbName').textContent = t.display_name;
+    $('trName').textContent = t.display_name;
+    $('hello').textContent = 'Salut, ' + c.full_name.split(/\s+/)[0] + '!';
+    App.show($('vArchived'), c.status === 'archived');
+    App.show($('loading'), false);
+    App.show($('vApp'), true);
+
+    sb.rpc('touch_last_seen'); // pentru „ultima intrare” din panoul antrenorului
+  } catch (e) {
+    $('loading').textContent = App.ro(e);
+  }
+
+  $('logout').onclick = async function () { await sb.auth.signOut(); location.replace('index.html'); };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intră în cont</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="assets/app.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/config.js"></script>
+<script src="assets/common.js"></script>
+</head>
+<body>
+<main class="wrap narrow">
+  <div id="loading" class="loading">Se încarcă…</div>
+
+  <!-- intrare -->
+  <section id="vLogin" class="card" hidden>
+    <h1>Intră în cont</h1>
+    <p class="muted">Pentru antrenori și pentru clienții lor.</p>
+    <p id="loginMsg" class="msg" hidden></p>
+    <form id="fLogin" novalidate>
+      <div class="field"><label for="lEmail">Email</label><input id="lEmail" type="email" autocomplete="email" required></div>
+      <div class="field"><label for="lPass">Parola</label><input id="lPass" type="password" autocomplete="current-password" required></div>
+      <button class="btn btn-block" type="submit">Intră</button>
+    </form>
+    <p class="small center" style="margin-top:14px"><button class="linkbtn" id="toForgot" type="button">Am uitat parola</button></p>
+    <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+    <p class="small muted center" style="margin:0">Ești antrenor și nu ai cont? <a href="antrenor.html">Creează cont de antrenor</a><br>
+    Ești client? Folosește link-ul primit de la antrenorul tău.</p>
+  </section>
+
+  <!-- am uitat parola -->
+  <section id="vForgot" class="card" hidden>
+    <h1>Resetează parola</h1>
+    <p class="muted">Îți trimitem pe email un link pentru o parolă nouă.</p>
+    <p id="forgotMsg" class="msg" hidden></p>
+    <form id="fForgot" novalidate>
+      <div class="field"><label for="fEmail">Email</label><input id="fEmail" type="email" autocomplete="email" required></div>
+      <button class="btn btn-block" type="submit">Trimite link-ul</button>
+    </form>
+    <p class="small center" style="margin-top:14px"><button class="linkbtn" id="backLogin" type="button">Înapoi la intrare</button></p>
+  </section>
+
+  <!-- parola nouă (după link-ul din email) -->
+  <section id="vNewPass" class="card" hidden>
+    <h1>Alege o parolă nouă</h1>
+    <p id="newMsg" class="msg" hidden></p>
+    <form id="fNew" novalidate>
+      <div class="field"><label for="nPass">Parola nouă (minim 8 caractere)</label><input id="nPass" type="password" autocomplete="new-password" minlength="8" required></div>
+      <button class="btn btn-block" type="submit">Salvează parola</button>
+    </form>
+  </section>
+</main>
+
+<script>
+(async function () {
+  if (!App.configured) return App.notConfigured();
+  var $ = App.$, sb = App.sb, recovering = /type=recovery/.test(location.hash);
+
+  function view(id) {
+    ['loading', 'vLogin', 'vForgot', 'vNewPass'].forEach(function (v) { App.show($(v), v === id); });
+  }
+
+  async function goHome() {
+    var acc = await App.account();
+    if (acc && acc.role) location.replace(App.homeFor(acc.role));
+    else { view('vLogin'); App.msg($('loginMsg'), 'Contul acesta nu e legat de niciun antrenor. Deschide link-ul de invitare primit de la antrenor.'); await sb.auth.signOut(); }
+  }
+
+  sb.auth.onAuthStateChange(function (ev) {
+    if (ev === 'PASSWORD_RECOVERY') { recovering = true; view('vNewPass'); }
+  });
+
+  try {
+    var s = await sb.auth.getSession();
+    if (recovering) view('vNewPass');
+    else if (s.data.session) await goHome();
+    else view('vLogin');
+  } catch (e) { view('vLogin'); App.msg($('loginMsg'), App.ro(e)); }
+
+  $('fLogin').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var b = e.target.querySelector('button'), email = $('lEmail').value.trim(), pass = $('lPass').value;
+    if (!email || !pass) return App.msg($('loginMsg'), 'Scrie emailul și parola.');
+    b.disabled = true; App.msg($('loginMsg'), '');
+    var r = await sb.auth.signInWithPassword({ email: email, password: pass });
+    if (r.error) { b.disabled = false; return App.msg($('loginMsg'), App.ro(r.error)); }
+    try { await goHome(); } catch (err) { b.disabled = false; App.msg($('loginMsg'), App.ro(err)); }
+  });
+
+  $('toForgot').onclick = function () { $('fEmail').value = $('lEmail').value; view('vForgot'); };
+  $('backLogin').onclick = function () { view('vLogin'); };
+
+  $('fForgot').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var b = e.target.querySelector('button'), email = $('fEmail').value.trim();
+    if (!email) return App.msg($('forgotMsg'), 'Scrie adresa de email.');
+    b.disabled = true;
+    var r = await sb.auth.resetPasswordForEmail(email, { redirectTo: App.base() + 'index.html' });
+    b.disabled = false;
+    if (r.error) return App.msg($('forgotMsg'), App.ro(r.error));
+    App.msg($('forgotMsg'), 'Dacă există un cont cu acest email, ai primit link-ul. Verifică și Spam.', 'ok');
+  });
+
+  $('fNew').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var b = e.target.querySelector('button'), p = $('nPass').value;
+    if (p.length < 8) return App.msg($('newMsg'), 'Parola trebuie să aibă cel puțin 8 caractere.');
+    b.disabled = true;
+    var r = await sb.auth.updateUser({ password: p });
+    if (r.error) { b.disabled = false; return App.msg($('newMsg'), App.ro(r.error)); }
+    history.replaceState(null, '', location.pathname);
+    await goHome();
+  });
+})();
+</script>
+</body>
+</html>
