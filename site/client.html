@@ -59,7 +59,8 @@
     App.show($('loading'), false);
     App.show($('vApp'), true);
 
-    sb.rpc('touch_last_seen'); // pentru „ultima intrare” din panoul antrenorului
+    // pentru „ultima intrare” din panoul antrenorului (.then() trimite efectiv cererea)
+    sb.rpc('touch_last_seen').then(function (r) { if (r.error) console.warn('touch_last_seen', r.error.message); });
   } catch (e) {
     $('loading').textContent = App.ro(e);
   }
