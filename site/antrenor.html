@@ -9,6 +9,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/config.js"></script>
 <script src="assets/common.js"></script>
+<script src="assets/generator.js"></script>
+<script src="assets/trainer-client.js"></script>
 </head>
 <body>
 <div id="loading" class="loading">Se încarcă…</div>
@@ -45,7 +47,9 @@
     <button class="btn btn-ghost btn-sm" id="logout" type="button">Ieși</button>
   </header>
 
-  <main class="wrap stack">
+  <main class="wrap narrow-md stack" id="vClient" hidden></main>
+
+  <main class="wrap stack" id="vHome">
     <section class="card">
       <h2>Link-ul tău de invitare</h2>
       <p class="muted small">Trimite-l clienților. Își fac singuri cont, completează datele și primesc planul. Apar apoi mai jos, în lista ta.</p>
@@ -73,7 +77,7 @@
       <p id="clMsg" class="msg" hidden></p>
       <p id="clEmpty" class="muted" hidden>Niciun client încă. Trimite link-ul de mai sus primului client.</p>
       <ul class="list" id="clList"></ul>
-      <p class="small muted" style="margin:12px 0 0">Graficele de greutate, cât respectă planul și alertele vin în etapa următoare. Clienții arhivați nu se mai numără la abonament, iar istoricul lor rămâne.</p>
+      <p class="small muted" style="margin:12px 0 0">Apasă pe un client ca să-i stabilești caloriile și macro-urile. Graficele de greutate, cât respectă planul și alertele vin în etapa următoare. Clienții arhivați nu se mai numără la abonament, iar istoricul lor rămâne.</p>
     </section>
 
     <section class="card">
@@ -143,21 +147,48 @@
     var shown = showArch ? active.concat(arch) : active;
     App.show($('clEmpty'), clients.length === 0);
     $('clList').innerHTML = shown.map(function (c) {
-      var isArch = c.status === 'archived';
+      var isArch = c.status === 'archived', st = statusOf(c);
       return '<li>' +
-        '<div class="who"><b>' + esc(c.full_name) + (isArch ? ' <span class="badge">arhivat</span>' : '') + '</b>' +
-        '<span class="small muted">Înscris pe ' + App.fmtDate(c.joined_at) + ' · ultima intrare: ' + App.ago(c.last_seen_at) + '</span></div>' +
+        '<button type="button" class="who who-btn" data-open="' + esc(c.id) + '"><b>' + esc(c.full_name) + (isArch ? ' <span class="badge">arhivat</span>' : '') + '</b>' +
+        '<span class="small muted">Înscris pe ' + App.fmtDate(c.joined_at) + ' · ultima intrare: ' + App.ago(c.last_seen_at) + '</span>' +
+        '<span class="badge ' + st[0] + '">' + esc(st[1]) + '</span></button>' +
         '<button class="btn btn-ghost btn-sm" type="button" data-id="' + esc(c.id) + '" data-to="' + (isArch ? 'active' : 'archived') + '">' +
         (isArch ? 'Reactivează' : 'Arhivează') + '</button></li>';
     }).join('');
   }
 
+  var info = { prof: {}, tgt: {}, prop: {} };
+  function statusOf(c) {
+    if (info.prop[c.id]) return ['badge-warn', 'propunere de ajustare'];
+    if (info.tgt[c.id]) return ['badge-ok', info.tgt[c.id].kcal + ' kcal'];
+    if (info.prof[c.id]) return ['badge-warn', 'așteaptă calorii'];
+    return ['', 'nu a completat datele'];
+  }
+
   async function loadClients() {
-    var r = await sb.from('clients').select('id,full_name,status,joined_at,archived_at,last_seen_at').order('joined_at', { ascending: false });
-    if (r.error) return App.msg($('clMsg'), App.ro(r.error));
+    var q = await Promise.all([
+      sb.from('clients').select('id,full_name,status,joined_at,archived_at,last_seen_at').order('joined_at', { ascending: false }),
+      sb.from('meal_profiles').select('user_id'),
+      sb.from('client_targets').select('client_id,kcal'),
+      sb.from('target_proposals').select('client_id').eq('status', 'pending')
+    ]);
+    var err = q.find(function (x) { return x.error; });
+    if (err) return App.msg($('clMsg'), App.ro(err.error));
     App.msg($('clMsg'), '');
-    clients = r.data;
+    clients = q[0].data;
+    info = { prof: {}, tgt: {}, prop: {} };
+    q[1].data.forEach(function (x) { info.prof[x.user_id] = true; });
+    q[2].data.forEach(function (x) { info.tgt[x.client_id] = x; });
+    q[3].data.forEach(function (x) { info.prop[x.client_id] = true; });
     renderClients();
+  }
+
+  function showHome() { App.show($('vClient'), false); App.show($('vHome'), true); loadClients(); window.scrollTo(0, 0); }
+  function openClient(id) {
+    var c = clients.find(function (x) { return x.id === id; });
+    if (!c) return;
+    App.show($('vHome'), false); App.show($('vClient'), true);
+    TrainerClient.open(me, c, showHome, function (cid, t) { info.tgt[cid] = t; });
   }
 
   async function start() {
@@ -214,6 +245,8 @@
   // ---- clienți ----
   $('showArch').onchange = renderClients;
   $('clList').addEventListener('click', async function (e) {
+    var ob = e.target.closest('[data-open]');
+    if (ob) return openClient(ob.getAttribute('data-open'));
     var b = e.target.closest('button[data-id]');
     if (!b) return;
     var to = b.getAttribute('data-to'), c = clients.find(function (x) { return x.id === b.getAttribute('data-id'); });

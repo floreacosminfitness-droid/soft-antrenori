@@ -3,12 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Contul meu</title>
+<title>Planul meu</title>
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="assets/app.css">
+<link rel="stylesheet" href="assets/plan.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/config.js"></script>
 <script src="assets/common.js"></script>
+<script src="assets/generator.js"></script>
+<script src="assets/client-app.js"></script>
 </head>
 <body>
 <div id="loading" class="loading">Se încarcă…</div>
@@ -20,21 +23,17 @@
     <button class="btn btn-ghost btn-sm" id="logout" type="button">Ieși</button>
   </header>
 
-  <main class="wrap narrow stack">
-    <section class="card">
+  <main class="wrap narrow-md stack">
+    <section class="hello">
       <h1 id="hello"></h1>
-      <p class="muted" style="margin:0">Contul tău e legat de <b id="trName"></b>.</p>
-    </section>
-
-    <!-- Etapa 2 pune aici: calculatorul, preferințele și planul pe 7 zile -->
-    <section class="card" id="planSlot">
-      <h2>Planul tău alimentar</h2>
-      <p class="muted" style="margin:0">Aici vor apărea în curând calculatorul, preferințele și planul tău pe 7 zile.</p>
+      <p class="muted" style="margin:0">Planul tău alimentar, de la <b id="trName"></b>.</p>
     </section>
 
     <section id="vArchived" class="card" hidden>
       <p class="muted" style="margin:0">Colaborarea cu antrenorul tău s-a încheiat, dar istoricul tău rămâne aici.</p>
     </section>
+
+    <div id="mpOut"></div>
   </main>
 </div>
 
@@ -43,6 +42,8 @@
   if (!App.configured) return App.notConfigured();
   var $ = App.$, sb = App.sb, esc = App.esc;
 
+  $('logout').onclick = async function () { await sb.auth.signOut(); location.replace('index.html'); };
+
   try {
     var acc = await App.account();
     if (!acc) return location.replace('index.html');
@@ -50,7 +51,7 @@
     if (acc.role !== 'client') { await sb.auth.signOut(); return location.replace('index.html'); }
 
     var t = acc.trainer, c = acc.client;
-    document.title = t.display_name;
+    document.title = 'Planul meu · ' + t.display_name;
     $('tbLogo').innerHTML = t.logo_url ? '<img class="logo" src="' + esc(t.logo_url) + '" alt="">' : '';
     $('tbName').textContent = t.display_name;
     $('trName').textContent = t.display_name;
@@ -61,11 +62,10 @@
 
     // pentru „ultima intrare” din panoul antrenorului (.then() trimite efectiv cererea)
     sb.rpc('touch_last_seen').then(function (r) { if (r.error) console.warn('touch_last_seen', r.error.message); });
+    ClientApp.start(acc);
   } catch (e) {
     $('loading').textContent = App.ro(e);
   }
-
-  $('logout').onclick = async function () { await sb.auth.signOut(); location.replace('index.html'); };
 })();
 </script>
 </body>
