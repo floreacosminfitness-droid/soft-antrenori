@@ -34,6 +34,7 @@
     if (/already registered|already been registered|User already exists/i.test(m)) return 'Există deja un cont cu acest email. Intră în cont sau folosește „Am uitat parola”.';
     if (/Password should be at least|weak.?password/i.test(m)) return 'Parola trebuie să aibă cel puțin 8 caractere.';
     if (/invalid.*email|Unable to validate email/i.test(m)) return 'Adresa de email nu pare corectă.';
+    if (/email rate limit/i.test(m)) return 'Nu am putut trimite acum emailul de confirmare. Încearcă din nou mai târziu sau anunță-ți antrenorul.';
     if (/rate limit|too many|For security purposes/i.test(m)) return 'Prea multe încercări. Așteaptă un minut și încearcă din nou.';
     if (/COD_INVITARE_INVALID/i.test(m)) return 'Link-ul de invitare nu mai e valabil. Cere-i antrenorului link-ul nou.';
     if (/Database error saving new user/i.test(m)) return 'Contul nu a putut fi creat. Verifică link-ul de la antrenor și încearcă din nou.';
