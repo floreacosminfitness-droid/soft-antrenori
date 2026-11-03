@@ -217,6 +217,13 @@
       day.meals.forEach(function (m) { lastUsed[m.recipe.id] = d; });
       days.push(day);
     }
+    // Soft antrenori: clientul a ales „aceleași mese în fiecare zi” -> ziua 1 se repetă toată săptămâna
+    if (q.variety === 'same') {
+      var d0 = days[0];
+      for (var di2 = 1; di2 < days.length; di2++) {
+        days[di2] = { meals: d0.meals.map(function (m) { var c = Object.assign({}, m); c.items = m.items.map(function (i) { return Object.assign({}, i); }); return c; }), totals: Object.assign({}, d0.totals), ok: d0.ok };
+      }
+    }
     var avgP = days.reduce(function (t, d) { return t + d.totals.p; }, 0) / 7;
     if (avgP < T.p * 0.95) warnings.push('Ținta de proteine (' + T.p + ' g) e greu de atins doar din rețete cu filtrele alese; planul ajunge în medie la ' + Math.round(avgP) + ' g. Un shake proteic pe zi rezolvă diferența.');
     return { targets: T, days: days, shopping: shopping(days), warnings: warnings, slots: slots.map(function (s) { return s[1]; }) };

@@ -145,8 +145,16 @@
     render();
   }
 
+  var ckMounted = false;
+  function checkinArea() {
+    var box = $('ckOut'); if (!box) return;
+    var on = !!MP.profile && !MP.edit;
+    App.show(box, on);
+    if (on && !ckMounted) { ckMounted = true; Checkin.mountClient(box, { clientId: MP.me.id, onWeight: async function (d, kg) { await upsertWeight(d, kg); if (!MP.edit) render(); } }); }
+  }
   function render() {
     if (reader) { stopCamera(); if (MP.log) MP.log.scanning = false; }
+    checkinArea();
     var el = $('mpOut');
     if (!MP.profile || MP.edit) { el.innerHTML = formHtml(); return; }
     if (!MP.targets) { el.innerHTML = waitHtml() + weightHtml(); return; }
@@ -173,6 +181,7 @@
       '<div class="field"><label>Obiectiv</label>' + seg('goal', [['slabire', 'Slăbire'], ['mentinere', 'Menținere'], ['masa', 'Masă musculară']], a.goal || 'slabire') + '</div>' +
       '<div class="field"><label for="mpDiet">Ce mănânci?</label><select id="mpDiet">' + opt([['clasic', 'De toate (clasic)'], ['vegetarian', 'Vegetarian'], ['fara_lactoza', 'Fără lactoză'], ['vegetarian_fara_lactoza', 'Vegetarian și fără lactoză']], a.diet || 'clasic') + '</select></div>' +
       '<div class="field"><label>Câte mese pe zi?</label>' + seg('meals', [[3, '3 mese'], [4, '3 mese + gustare'], [5, '3 mese + 2 gustări']], a.meals || 4) + '</div>' +
+      '<div class="field"><label>Cum vrei meniul?</label>' + seg('variety', [['vary', 'Varietate: mese diferite'], ['same', 'Aceleași mese în fiecare zi']], a.variety || 'vary') + '<p class="hint" style="margin:6px 0 0">Aceleași mese zilnic e mai ușor de urmat și de cumpărat; le poți schimba oricând pe o zi anume.</p></div>' +
       '<div class="field"><label for="mpMax">Cât timp ai de gătit pe masă?</label><select id="mpMax">' + opt([[0, 'Oricât'], [30, 'Până la 30 de minute'], [20, 'Până la 20 de minute'], [15, 'Până la 15 minute']], a.maxMinutes || 0) + '</select></div>' +
       '<div class="field"><label>Ce nu mănânci? <span class="muted">(opțional)</span></label><div class="mp-seg mp-chips" id="mpExcl">' + EXCL.map(function (e, i) { return '<button type="button" class="mp-chip' + (exOn[i] ? ' is-on' : '') + '" data-x="' + i + '">' + e[0] + '</button>'; }).join('') + '</div></div>' +
       '<label class="check" style="margin:6px 0 14px"><input type="checkbox" id="mpSafe"' + (MP.profile ? ' checked' : '') + '><span>Confirm că nu am o afecțiune pentru care medicul mi-a recomandat o dietă specială (de exemplu diabet, boli de rinichi, sarcină, tulburări de alimentație).</span></label>' +
@@ -196,6 +205,7 @@
     return '<section class="card" id="mpW"><h2>Greutate</h2><p class="muted small">Cântărește-te de 2–3 ori pe săptămână, dimineața, înainte de micul dejun. Antrenorul tău vede evoluția.</p>' +
       '<div class="kcal-row"><input id="mpWkg" type="number" inputmode="decimal" step="0.1" min="30" max="300" placeholder="kg azi" value="' + (todayW ? esc(todayW.weight_kg) : '') + '"><button type="button" class="btn btn-sm" data-w="save">' + (todayW ? 'Actualizează' : 'Salvează') + '</button></div>' +
       '<p class="msg" id="mpWmsg" hidden></p>' +
+      (MP.weights.length > 1 ? App.lineChart(MP.weights.map(function (x) { return { d: x.measured_on, v: +x.weight_kg }; }), 'kg', 'Greutatea ta') : '') +
       (ws.length ? '<ul class="wlist">' + ws.map(function (x) { return '<li><span>' + fmtDate(x.measured_on) + '</span><b>' + String(x.weight_kg).replace('.', ',') + ' kg</b><button type="button" class="linkbtn small" data-wdel="' + x.id + '" aria-label="Șterge">șterge</button></li>'; }).join('') + '</ul>' : '') +
       '</section>';
   }
@@ -543,14 +553,14 @@
       f.querySelectorAll('#mpExcl .mp-chip.is-on').forEach(function (c) { var e2 = EXCL[+c.getAttribute('data-x')]; MP.content.foods.forEach(function (fd) { if (e2[1](fd) && exclude.indexOf(fd.id) < 0) exclude.push(fd.id); }); });
       var groupIds = {}; EXCL.forEach(function (e2) { MP.content.foods.forEach(function (fd) { if (e2[1](fd)) groupIds[fd.id] = 1; }); });
       ((MP.profile && MP.profile.answers.exclude) || []).forEach(function (id) { if (!groupIds[id] && exclude.indexOf(id) < 0) exclude.push(id); });
-      var answers = { sex: segv('sex'), age: age, height: height, weight: weight, activity: $('mpAct').value, goal: segv('goal'), diet: $('mpDiet').value, meals: +segv('meals'), maxMinutes: +$('mpMax').value || 0, exclude: exclude };
+      var answers = { sex: segv('sex'), age: age, height: height, weight: weight, activity: $('mpAct').value, goal: segv('goal'), diet: $('mpDiet').value, meals: +segv('meals'), variety: segv('variety') || 'vary', maxMinutes: +$('mpMax').value || 0, exclude: exclude };
       var btn = f.querySelector('button[type=submit]'); btn.disabled = true; msg(m, '');
       var t = today();
       var row = { answers: answers, updated_at: new Date().toISOString() };
       if (!MP.profile) { row.plan_start = t; row.history = []; }
       var r = await sb.from('meal_profiles').upsert(row, { onConflict: 'user_id' }).select('*').single();
       if (r.error) { btn.disabled = false; return msg(m, 'Nu am putut salva. Verifică internetul și încearcă din nou.'); }
-      var prefsChanged = !MP.profile || ['diet', 'meals', 'maxMinutes'].some(function (k) { return String(MP.profile.answers[k]) !== String(answers[k]); }) || JSON.stringify(MP.profile.answers.exclude || []) !== JSON.stringify(exclude);
+      var prefsChanged = !MP.profile || ['diet', 'meals', 'maxMinutes', 'variety'].some(function (k) { return String(MP.profile.answers[k]) !== String(answers[k]); }) || JSON.stringify(MP.profile.answers.exclude || []) !== JSON.stringify(exclude);
       MP.profile = r.data;
       var lastW = MP.weights.length ? +MP.weights[MP.weights.length - 1].weight_kg : null;
       if (weight !== lastW) await upsertWeight(t, weight);

@@ -7,6 +7,7 @@
   var GOAL = [['slabire', 'Slăbire'], ['mentinere', 'Menținere'], ['masa', 'Masă musculară']];
   var DIET = { clasic: 'De toate', vegetarian: 'Vegetarian', fara_lactoza: 'Fără lactoză', vegetarian_fara_lactoza: 'Vegetarian și fără lactoză' };
   var MEALS = { 3: '3 mese', 4: '3 mese + gustare', 5: '3 mese + 2 gustări' };
+  var VARIETY = { same: 'aceleași mese zilnic', vary: 'mese diferite' };
 
   var S = null; // starea fișei deschise
 
@@ -73,6 +74,7 @@
       '<div><span>Mese pe zi</span><b>' + esc(MEALS[a.meals] || a.meals || '—') + '</b></div>' +
       '<div><span>Timp de gătit</span><b>' + (a.maxMinutes ? 'până la ' + a.maxMinutes + ' min' : 'oricât') + '</b></div>' +
       '<div><span>Alimente excluse</span><b>' + (ex ? ex : 'niciunul') + '</b></div>' +
+      '<div><span>Meniu</span><b>' + (VARIETY[a.variety] || VARIETY.vary) + '</b></div>' +
       '</div><p class="muted small" style="margin:10px 0 0">Datele au fost completate de client pe ' + App.fmtDate(S.profile.updated_at) + '.</p>';
   }
 
@@ -152,7 +154,7 @@
     h += '<section class="card"><h2>Caloriile și macro-urile clientului</h2>' + editorHtml() +
       '<p id="teMsg" class="msg" hidden></p><button type="button" class="btn btn-block" data-act="save">' + (t ? 'Salvează și refă planul clientului' : 'Salvează și trimite planul') + '</button>' +
       '<p class="muted small" style="margin:10px 0 0">Clientul primește planul pe noile cifre data viitoare când deschide contul.</p></section>';
-    $('vClient').innerHTML = h;
+    $('tcMain').innerHTML = h;
     $('teOut').innerHTML = outHtml();
   }
 
@@ -264,7 +266,11 @@
     };
     if (t) { fillEditor(t, (t.calc && t.calc.mode) || 'pct'); S.lastGood = { kcal: t.kcal, p: t.p, c: t.c, f: t.f }; }
     else { var sug = suggestion(); fillEditor(sug ? { kcal: sug.kcal, p: sug.p, c: sug.c, f: sug.f } : { kcal: 2000, p: 150, c: 200, f: 65 }, 'pct'); }
+    root.innerHTML = '<div id="tcMain"></div><div id="tcEvo" class="stack" style="margin-top:16px"></div>';
     bind(); render();
+    // evoluția: graficul greutății și check-in-urile (se desenează o singură dată)
+    $('tcEvo').innerHTML = '<section class="card"><h2>Greutate</h2>' + (ws.length ? App.lineChart(ws.map(function (x) { return { d: x.measured_on, v: +x.weight_kg }; }), 'kg', 'Greutatea clientului') : '<p class="muted small" style="margin:0">Clientul nu și-a notat încă greutatea.</p>') + '</section><div id="tcCk"></div>';
+    Checkin.mountTrainer($('tcCk'), client.id);
     window.scrollTo(0, 0);
   }
 
