@@ -68,6 +68,11 @@
     if (r.error) throw r.error;
     if (!r.data || !r.data.length) return view('vBad');
     var t = r.data[0];
+    if (t.accepting === false) {
+      $('vBad').querySelector('h1').textContent = t.display_name + ' nu poate primi clienți noi acum';
+      $('vBad').querySelector('p').textContent = 'Contul antrenorului tău e plin sau abonamentul lui trebuie reînnoit. Anunță-l și încearcă din nou cu același link puțin mai târziu.';
+      return view('vBad');
+    }
     document.title = 'Înscriere · ' + t.display_name;
     $('trName').textContent = t.display_name;
     $('trName2').textContent = t.display_name;

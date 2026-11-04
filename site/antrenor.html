@@ -11,6 +11,9 @@
 <script src="assets/common.js"></script>
 <script src="assets/generator.js"></script>
 <script src="assets/checkin.js"></script>
+<script src="assets/chat.js"></script>
+<script src="assets/billing.js"></script>
+<script src="assets/menu-editor.js"></script>
 <script src="assets/trainer-client.js"></script>
 </head>
 <body>
@@ -20,7 +23,7 @@
 <main id="vSignup" class="wrap narrow" hidden>
   <div class="card">
     <h1>Creează cont de antrenor</h1>
-    <p class="muted">Clienții tăi primesc automat planul alimentar, iar tu îi urmărești pe toți dintr-un singur loc.</p>
+    <p class="muted">Clienții tăi primesc automat planul alimentar, iar tu îi urmărești pe toți dintr-un singur loc. <b>14 zile gratuit, fără card.</b> <a href="preturi.html">Vezi prețurile</a></p>
     <p id="suMsg" class="msg" hidden></p>
     <form id="fSignup" novalidate>
       <div class="field"><label for="suName">Numele afișat clienților</label><input id="suName" type="text" maxlength="80" placeholder="de exemplu Andrei Ionescu Coaching" required></div>
@@ -49,8 +52,16 @@
   </header>
 
   <main class="wrap narrow-md stack" id="vClient" hidden></main>
+  <main class="wrap stack" id="vBilling" hidden></main>
 
   <main class="wrap stack" id="vHome">
+    <p id="payMsg" class="msg" hidden></p>
+    <div id="billBar"></div>
+    <section class="card" id="alertsCard" hidden>
+      <h2>Au nevoie de atenție</h2>
+      <div class="alerts" id="alertsList"></div>
+    </section>
+
     <section class="card">
       <h2>Link-ul tău de invitare</h2>
       <p class="muted small">Trimite-l clienților. Își fac singuri cont, completează datele și primesc planul. Apar apoi mai jos, în lista ta.</p>
@@ -78,7 +89,7 @@
       <p id="clMsg" class="msg" hidden></p>
       <p id="clEmpty" class="muted" hidden>Niciun client încă. Trimite link-ul de mai sus primului client.</p>
       <ul class="list" id="clList"></ul>
-      <p class="small muted" style="margin:12px 0 0">Apasă pe un client ca să-i stabilești caloriile și macro-urile. Graficele de greutate, cât respectă planul și alertele vin în etapa următoare. Clienții arhivați nu se mai numără la abonament, iar istoricul lor rămâne.</p>
+      <p class="small muted" style="margin:12px 0 0">Apasă pe un client ca să-i stabilești caloriile, meniul, să-i vezi evoluția sau să-i scrii. Procentul arată câte mese din plan a bifat „Am mâncat” în ultimele 7 zile. Clienții arhivați nu se mai numără la abonament, iar istoricul lor rămâne.</p>
     </section>
 
     <section class="card">
@@ -111,7 +122,7 @@
 (async function () {
   if (!App.configured) return App.notConfigured();
   var $ = App.$, sb = App.sb, esc = App.esc;
-  var me = null, clients = [];
+  var me = null, clients = [], email = '';
 
   function view(id) {
     ['loading', 'vSignup', 'vCheckEmail', 'vApp'].forEach(function (v) { App.show($(v), v === id); });
@@ -152,13 +163,44 @@
       return '<li>' +
         '<button type="button" class="who who-btn" data-open="' + esc(c.id) + '"><b>' + esc(c.full_name) + (isArch ? ' <span class="badge">arhivat</span>' : '') + '</b>' +
         '<span class="small muted">Înscris pe ' + App.fmtDate(c.joined_at) + ' · ultima intrare: ' + App.ago(c.last_seen_at) + '</span>' +
-        '<span class="badge ' + st[0] + '">' + esc(st[1]) + '</span></button>' +
+        '<span class="cl-tags"><span class="badge ' + st[0] + '">' + esc(st[1]) + '</span>' + tagsOf(c) + '</span></button>' +
         '<button class="btn btn-ghost btn-sm" type="button" data-id="' + esc(c.id) + '" data-to="' + (isArch ? 'active' : 'archived') + '">' +
         (isArch ? 'Reactivează' : 'Arhivează') + '</button></li>';
     }).join('');
   }
 
-  var info = { prof: {}, tgt: {}, prop: {} };
+  var info = { prof: {}, tgt: {}, prop: {}, ov: {} };
+  var DAY = 864e5;
+  function adh(c) { var o = info.ov[c.id]; return o && o.meals_total >= 3 ? Math.round(o.meals_eaten / o.meals_total * 100) : null; }
+  function tagsOf(c) {
+    var o = info.ov[c.id] || {}, a = adh(c), h = '';
+    if (a != null) h += '<span class="badge ' + (a >= 80 ? 'badge-ok' : a >= 50 ? 'badge-warn' : 'badge-bad') + '">respectă ' + a + '%</span>';
+    if (o.w_last != null && o.w_first != null) { var d = Math.round((o.w_last - o.w_first) * 10) / 10; h += '<span class="badge">' + String(o.w_last).replace('.', ',') + ' kg' + (d ? ' (' + (d > 0 ? '+' : '−') + String(Math.abs(d)).replace('.', ',') + ')' : '') + '</span>'; }
+    if (o.unread) h += '<span class="badge badge-msg">' + o.unread + (o.unread === 1 ? ' mesaj nou' : ' mesaje noi') + '</span>';
+    return h;
+  }
+  // ce trebuie să vadă antrenorul acum
+  function alertsOf(c) {
+    if (c.status !== 'active') return [];
+    var out = [], o = info.ov[c.id] || {}, a = adh(c), now = Date.now();
+    if (o.unread) out.push('ți-a scris ' + (o.unread === 1 ? 'un mesaj' : o.unread + ' mesaje'));
+    if (info.prop[c.id]) out.push('are o propunere de ajustare a caloriilor');
+    if (info.prof[c.id] && !info.tgt[c.id]) out.push('așteaptă să-i stabilești caloriile');
+    var seen = c.last_seen_at ? Date.parse(c.last_seen_at) : null;
+    if (seen ? now - seen > 3 * DAY : now - Date.parse(c.joined_at) > 3 * DAY) out.push(seen ? 'nu a mai intrat de ' + Math.floor((now - seen) / DAY) + ' zile' : 'nu a intrat încă în cont');
+    if (a != null && a < 50 && o.meals_total >= 6) out.push('respectă doar ' + a + '% din mese');
+    if (o.w_prev != null && o.w_last != null) {
+      var dw = Math.round((o.w_last - o.w_prev) * 10) / 10;
+      if (o.goal === 'slabire' && dw >= 0.5) out.push('a crescut în greutate: +' + String(dw).replace('.', ',') + ' kg în 2 săptămâni');
+      if (o.goal === 'masa' && dw <= -0.5) out.push('a scăzut în greutate: ' + String(dw).replace('.', ',') + ' kg în 2 săptămâni');
+    }
+    return out;
+  }
+  function renderAlerts() {
+    var rows = clients.map(function (c) { return { c: c, a: alertsOf(c) }; }).filter(function (x) { return x.a.length; });
+    App.show($('alertsCard'), rows.length > 0);
+    $('alertsList').innerHTML = rows.map(function (x) { return '<button type="button" class="alert-row" data-open="' + esc(x.c.id) + '"><b>' + esc(x.c.full_name) + '</b><span>' + esc(x.a.join(' · ')) + '</span>›</button>'; }).join('');
+  }
   function statusOf(c) {
     if (info.prop[c.id]) return ['badge-warn', 'propunere de ajustare'];
     if (info.tgt[c.id]) return ['badge-ok', info.tgt[c.id].kcal + ' kcal'];
@@ -171,20 +213,30 @@
       sb.from('clients').select('id,full_name,status,joined_at,archived_at,last_seen_at').order('joined_at', { ascending: false }),
       sb.from('meal_profiles').select('user_id'),
       sb.from('client_targets').select('client_id,kcal'),
-      sb.from('target_proposals').select('client_id').eq('status', 'pending')
+      sb.from('target_proposals').select('client_id').eq('status', 'pending'),
+      sb.rpc('trainer_overview')
     ]);
     var err = q.find(function (x) { return x.error; });
     if (err) return App.msg($('clMsg'), App.ro(err.error));
     App.msg($('clMsg'), '');
     clients = q[0].data;
-    info = { prof: {}, tgt: {}, prop: {} };
+    info = { prof: {}, tgt: {}, prop: {}, ov: {} };
     q[1].data.forEach(function (x) { info.prof[x.user_id] = true; });
     q[2].data.forEach(function (x) { info.tgt[x.client_id] = x; });
     q[3].data.forEach(function (x) { info.prop[x.client_id] = true; });
-    renderClients();
+    (q[4].data || []).forEach(function (x) { info.ov[x.client_id] = x; });
+    renderClients(); renderAlerts();
   }
 
-  function showHome() { App.show($('vClient'), false); App.show($('vHome'), true); loadClients(); window.scrollTo(0, 0); }
+  function showHome() { if (window.Chat) Chat.stop(); App.show($('vClient'), false); App.show($('vBilling'), false); App.show($('vHome'), true); loadClients(); refreshBilling(); window.scrollTo(0, 0); }
+  function renderBilling() { $('billBar').innerHTML = Billing.bar(me.billing); if (!$('vBilling').hidden) $('vBilling').innerHTML = Billing.section(me.billing, me, email); }
+  async function refreshBilling() { try { var a = await App.account(); if (a && a.billing) { me.billing = a.billing; renderBilling(); } } catch (e) {} }
+  function showBilling() { App.show($('vHome'), false); App.show($('vClient'), false); App.show($('vBilling'), true); renderBilling(); window.scrollTo(0, 0); }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-bill]'); if (!b) return;
+    if (b.getAttribute('data-bill') === 'open') showBilling(); else showHome();
+  });
+  Billing.bind($('vBilling'), renderBilling);
   function openClient(id) {
     var c = clients.find(function (x) { return x.id === id; });
     if (!c) return;
@@ -197,10 +249,20 @@
     if (!acc) return view('vSignup');
     if (acc.role === 'client') return location.replace('client.html');
     if (acc.role !== 'trainer') { await sb.auth.signOut(); return view('vSignup'); }
-    me = acc.trainer;
+    me = acc.trainer; me.billing = acc.billing;
+    var ses = await sb.auth.getSession(); email = (ses.data.session && ses.data.session.user && ses.data.session.user.email) || '';
     renderMe();
     view('vApp');
+    renderBilling();
     loadClients();
+    $('alertsList').addEventListener('click', function (e) { var ob = e.target.closest('[data-open]'); if (ob) openClient(ob.getAttribute('data-open')); });
+    // întoarcere de la plata Stripe: abonamentul se activează în câteva secunde
+    if (/[?&]plata=ok/.test(location.search)) {
+      history.replaceState(null, '', location.pathname);
+      App.msg($('payMsg'), 'Mulțumim! Plata a reușit. Abonamentul se activează în câteva secunde.', 'ok');
+      for (var i = 0; i < 8 && !Billing.paid(me.billing); i++) { await new Promise(function (r) { setTimeout(r, 2500); }); await refreshBilling(); }
+      if (Billing.paid(me.billing)) App.msg($('payMsg'), 'Gata, abonamentul ' + Billing.NAMES[me.billing.plan] + ' e activ.', 'ok');
+    }
   }
 
   // ---- înregistrare ----
@@ -256,7 +318,7 @@
     var r = await sb.from('clients').update({ status: to }).eq('id', c.id).select('id,full_name,status,joined_at,archived_at,last_seen_at').single();
     if (r.error) { b.disabled = false; return App.msg($('clMsg'), App.ro(r.error)); }
     Object.assign(c, r.data);
-    renderClients();
+    renderClients(); renderAlerts(); refreshBilling();
   });
 
   // ---- profil ----
