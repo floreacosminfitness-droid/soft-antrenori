@@ -144,7 +144,7 @@
     var lastW = S.weights.length ? S.weights[S.weights.length - 1] : null;
     var h = '<div class="row" style="margin-bottom:4px"><button type="button" class="linkbtn" data-act="back">← Toți clienții</button></div>' +
       '<section class="card"><h1 style="margin-bottom:6px">' + esc(c.full_name) + '</h1>' +
-      '<p class="muted small" style="margin:0">Înscris pe ' + App.fmtDate(c.joined_at) + ' · ultima intrare: ' + App.ago(c.last_seen_at) + (lastW ? ' · ultima greutate: ' + dec1(+lastW.weight_kg) + ' kg (' + App.fmtDate(lastW.measured_on) + ')' : '') + '</p>' +
+      '<p class="muted small" style="margin:0">Înscris pe ' + App.fmtDate(c.joined_at) + ' · ultima intrare: ' + App.ago(c.last_seen_at) + (lastW ? ' · ultima greutate: ' + dec1(+lastW.weight_kg) + ' kg (' + App.fmtDate(lastW.measured_on) + ')' : '') + (S.ov && S.ov.meals_total >= 3 ? ' · respectă planul: <b>' + R(S.ov.meals_eaten / S.ov.meals_total * 100) + '%</b> din mese în ultimele 7 zile (' + S.ov.meals_eaten + ' din ' + S.ov.meals_total + ')' : '') + '</p>' +
       (t ? '<p class="pill pill-ok">Plan activ: ' + t.kcal + ' kcal · ' + t.p + ' P · ' + t.c + ' C · ' + t.f + ' G <span class="muted">· setat pe ' + App.fmtDate(t.updated_at) + '</span></p>'
          : '<p class="pill pill-warn">' + (S.profile ? 'Clientul așteaptă să-i stabilești caloriile' : 'Clientul nu și-a completat încă datele') + '</p>') +
       '</section>';
@@ -214,6 +214,7 @@
     if (res.error) return App.msg(m, App.ro(res.error));
     S.targets = res.data; S.lastGood = r.t;
     if (S.onSaved) S.onSaved(S.client.id, res.data);
+    if (window.MenuEditor) MenuEditor.setTargets(res.data);
     render();
     App.msg($('teMsg'), 'Salvat. ' + S.client.full_name.split(/\s+/)[0] + ' primește planul pe ' + res.data.kcal + ' kcal.', 'ok');
   }
@@ -230,6 +231,7 @@
       if (up.error) { btn.disabled = false; return alertMsg(App.ro(up.error)); }
       S.targets = up.data; fillEditor(up.data);
       if (S.onSaved) S.onSaved(S.client.id, up.data);
+      if (window.MenuEditor) MenuEditor.setTargets(up.data);
     }
     var r = await sb.from('target_proposals').update({ status: to }).eq('id', id).select('*').single();
     if (r.error) { btn.disabled = false; return alertMsg(App.ro(r.error)); }
@@ -245,7 +247,8 @@
       sb.from('meal_profiles').select('answers,updated_at').eq('user_id', client.id).maybeSingle(),
       sb.from('client_targets').select('*').eq('client_id', client.id).maybeSingle(),
       sb.from('target_proposals').select('*').eq('client_id', client.id).order('created_on', { ascending: false }).limit(10),
-      sb.from('body_weights').select('measured_on,weight_kg').eq('user_id', client.id).order('measured_on', { ascending: true }).limit(400)
+      sb.from('body_weights').select('measured_on,weight_kg').eq('user_id', client.id).order('measured_on', { ascending: true }).limit(400),
+      sb.rpc('trainer_overview')
     ]);
     var err = q.find(function (x) { return x.error; });
     if (err) { root.innerHTML = '<div class="card"><p class="msg">' + esc(App.ro(err.error)) + '</p><button class="btn btn-ghost btn-sm" data-act="back">← Înapoi</button></div>'; root.onclick = function (e) { if (e.target.closest('[data-act=back]')) onBack(); }; return; }
@@ -255,6 +258,7 @@
     S = {
       me: me, client: client, onBack: onBack, onSaved: onSaved,
       profile: q[0].data, targets: t, proposals: q[2].data || [], weights: ws,
+      ov: ((q[4] && q[4].data) || []).find(function (x) { return x.client_id === client.id; }) || null,
       inp: {
         sex: a.sex || (calcIn && calcIn.sex) || 'm',
         age: a.age || (calcIn && calcIn.age) || '',
@@ -266,8 +270,11 @@
     };
     if (t) { fillEditor(t, (t.calc && t.calc.mode) || 'pct'); S.lastGood = { kcal: t.kcal, p: t.p, c: t.c, f: t.f }; }
     else { var sug = suggestion(); fillEditor(sug ? { kcal: sug.kcal, p: sug.p, c: sug.c, f: sug.f } : { kcal: 2000, p: 150, c: 200, f: 65 }, 'pct'); }
-    root.innerHTML = '<div id="tcMain"></div><div id="tcEvo" class="stack" style="margin-top:16px"></div>';
+    root.innerHTML = '<div id="tcMain"></div><div id="tcChat" style="margin-top:16px"></div><div id="tcMenu" style="margin-top:16px"></div><div id="tcEvo" class="stack" style="margin-top:16px"></div>';
     bind(); render();
+    MenuEditor.mount($('tcMenu'), { me: me, client: client, targets: t, profile: q[0].data });
+    var inactive = me.billing && me.billing.active === false;
+    Chat.mount($('tcChat'), { clientId: client.id, asTrainer: true, otherName: client.full_name, readOnly: inactive ? 'Ca să-i scrii clientului, alege un abonament (proba sau abonamentul s-au încheiat).' : null });
     // evoluția: graficul greutății și check-in-urile (se desenează o singură dată)
     $('tcEvo').innerHTML = '<section class="card"><h2>Greutate</h2>' + (ws.length ? App.lineChart(ws.map(function (x) { return { d: x.measured_on, v: +x.weight_kg }; }), 'kg', 'Greutatea clientului') : '<p class="muted small" style="margin:0">Clientul nu și-a notat încă greutatea.</p>') + '</section><div id="tcCk"></div>';
     Checkin.mountTrainer($('tcCk'), client.id);

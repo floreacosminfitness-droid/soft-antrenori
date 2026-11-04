@@ -124,3 +124,5 @@
 .wlist li { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); font-size: .92rem; }
 .wlist li span { flex: 1; color: var(--muted); }
 .mp-box > p.hint { font-weight: 400; }
+.mp-ing.is-locked li { display: flex; justify-content: space-between; gap: 10px; padding: 10px 2px; border-bottom: 1px solid var(--line); }
+.mp-ing.is-locked li span:last-child { color: var(--muted); white-space: nowrap; }

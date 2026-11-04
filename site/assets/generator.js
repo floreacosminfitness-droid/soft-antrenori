@@ -59,17 +59,17 @@
   }
 
   // ---- pregatirea retetelor: fiecare ingredient primeste un rol (proteina, carbo, grasime, leguma) ----
+  var FIXED = { sos_soia: 1, mustar: 1, usturoi: 1, lamaie: 1, miere: 0, bulion: 1 };
+  function role(x) {
+    if (FIXED[x.id] || x.kcal < 45) return 'v';
+    var e = x.p * 4 + x.c * 4 + x.f * 9 || 1;
+    if (x.p * 4 / e >= 0.3) return 'p';
+    if (x.f * 9 / e >= 0.5) return 'f';
+    return 'c';
+  }
   function prepare(data) {
     var food = {};
     data.foods.forEach(function (x) { food[x.id] = x; });
-    var FIXED = { sos_soia: 1, mustar: 1, usturoi: 1, lamaie: 1, miere: 0, bulion: 1 };
-    function role(x) {
-      if (FIXED[x.id] || x.kcal < 45) return 'v';
-      var e = x.p * 4 + x.c * 4 + x.f * 9 || 1;
-      if (x.p * 4 / e >= 0.3) return 'p';
-      if (x.f * 9 / e >= 0.5) return 'f';
-      return 'c';
-    }
     var PROT = { 'Carne': 'carne', 'Pește': 'peste', 'Ouă': 'oua', 'Lactate': 'lactate', 'Lactate fără lactoză': 'lactate', 'Proteine vegetale': 'vegetal', 'Leguminoase': 'vegetal', 'Băuturi vegetale': 'vegetal', 'Mezeluri': 'carne' };
     var recipes = data.recipes.map(function (r) {
       var best = null, bestP = 0;
@@ -718,12 +718,76 @@
       .slice(0, n || 8);
   }
 
+  // ---- Soft antrenori: meniul construit de antrenor (o zi, repetata toata saptamana) ----
+  // menu: { meals: [{ slot, type, name, note, items: [{ id, g }] }], foods: { id: aliment propriu }, targets }
+  function menuFood(data, menu) {
+    var food = {}; data.foods.forEach(function (x) { food[x.id] = x; });
+    Object.keys((menu && menu.foods) || {}).forEach(function (k) { food[k] = menu.foods[k]; });
+    return food;
+  }
+  function menuSlots(n, cfg) { return (cfg || CONFIG).meals[n] || CONFIG.meals[4]; }
+  // tinta fiecarei mese: partea ei din ziua intreaga
+  function menuMealTargets(T, n, cfg) {
+    return menuSlots(n, cfg).map(function (sl) { return { kcal: T.kcal * sl[2], p: T.p * sl[2], c: T.c * sl[2], f: T.f * sl[2], share: sl[2] }; });
+  }
+  // potriveste gramajele alimentelor alese ca masa sa ajunga la tinta (pastreaza alimentele, schimba doar cantitatile)
+  function fitItems(items, MT) {
+    var ing = items.filter(function (i) { return i.x; }).map(function (i) { return { id: i.id, g: Math.max(1, +i.g || 100), role: role(i.x), x: i.x }; });
+    if (!ing.length || !(MT.kcal > 0)) return items;
+    for (var pass = 0; pass < 4; pass++) {
+      var f = fit({ ing: ing }, MT, true);
+      ing = ing.map(function (it) { return { id: it.id, g: it.g * f.s[it.role], role: it.role, x: it.x }; });
+      var got = sumMacros(ing);
+      if (Math.abs(got.kcal - MT.kcal) <= MT.kcal * 0.02) break;
+      // daca proportiile nu mai pot fi atinse, macar caloriile: scalam tot la fel
+      if (pass === 3 || f.err > 0.3) { var k = MT.kcal / Math.max(1, got.kcal); ing.forEach(function (it) { it.g *= k; }); }
+    }
+    return ing.map(function (it) { var rd = roundIng(it, { p: 1, c: 1, f: 1, v: 1 }); return { id: it.id, g: rd.g, label: rd.label, x: it.x }; });
+  }
+  function itemsMacros(items) { var t = zero(); items.forEach(function (i) { if (i.x) add(t, macroOf(i.x, +i.g || 0)); }); return t; }
+  function menuRecipes(menu) {
+    return (menu.meals || []).map(function (m, k) {
+      return { id: 'tm' + k, name: m.name || m.slot, meal: m.type || 'pc', min: 0, steps: m.note ? [m.note] : [], cond: null, veg: false, lf: false, trainer: true, ing: [] };
+    });
+  }
+  function menuKey(menu) { return menu ? String(hash(JSON.stringify([menu.meals, menu.foods, menu.targets]))) : null; }
+  function menuPlan(data, menu, targetsIn, opts) {
+    opts = opts || {};
+    var T = fixedTargets(targetsIn), food = menuFood(data, menu), recs = menuRecipes(menu);
+    var n = menu.meals.length, MTs = menuMealTargets(T, n, opts.config), slots = menuSlots(n, opts.config);
+    var mt = menu.targets, same = mt && +mt.kcal === T.kcal && +mt.p === T.p && +mt.c === T.c && +mt.f === T.f;
+    var warnings = [];
+    var day0 = menu.meals.map(function (m, k) {
+      var items = (m.items || []).filter(function (i) { return food[i.id]; }).map(function (i) { return { id: i.id, g: +i.g, x: food[i.id] }; });
+      // tintele s-au schimbat dupa ce antrenorul a facut meniul: gramajele se potrivesc la noile tinte
+      if (!same && items.length) {
+        var oldK = mt ? menuMealTargets(fixedTargets(mt), n)[k].kcal : null;
+        var cur = itemsMacros(items).kcal, ratio = oldK ? cur / oldK : 1;
+        var MT = MTs[k]; items = fitItems(items, { kcal: MT.kcal * ratio, p: MT.p * ratio, c: MT.c * ratio, f: MT.f * ratio });
+      }
+      var meal = { recipe: recs[k], slot: m.slot || slots[k][1], type: m.type || slots[k][0], share: slots[k][2], target: MTs[k],
+        items: items.map(function (i) {
+          var rd = { g: Math.round(i.g), label: i.label || (i.id === 'ou' ? Math.max(1, Math.round(i.g / 55)) + (Math.round(i.g / 55) > 1 ? ' ouă' : ' ou') : null) };
+          return { id: i.id, name: i.x.name.replace(/ \(1 .*?\)$/, ''), g: rd.g, label: rd.label, x: i.x, role: role(i.x) };
+        }) };
+      // fara nume dat de antrenor: numele din alimente (ex. „Piept de pui, orez basmati și broccoli”)
+      var nm = meal.items.filter(function (i) { return i.x.kcal < 800; }).slice(0, 3).map(function (i, j) { var t = i.name.replace(/ \(.*?\)$/, ''); return j ? t.charAt(0).toLowerCase() + t.slice(1) : t; });
+      meal.name = m.name || (nm.length > 1 ? nm.slice(0, -1).join(', ') + ' și ' + nm[nm.length - 1] : nm[0] || meal.slot);
+      return recomputeMeal(meal);
+    });
+    var days = [];
+    for (var d = 0; d < 7; d++) days.push({ meals: day0.map(function (m) { var c = Object.assign({}, m); c.items = m.items.map(function (i) { return Object.assign({}, i); }); return c; }) });
+    var plan = refreshPlan({ targets: T, days: days, warnings: warnings, slots: slots.map(function (s) { return s[1]; }) });
+    plan.menuV = menuKey(menu);
+    return plan;
+  }
+
   var api = { CONFIG: CONFIG, targets: targets, fixedTargets: fixedTargets, prepare: prepare, generate: generate, adjust: adjust,
     SWAP_GROUPS: SWAP_GROUPS, TERMS: TERMS, renameText: renameText, stepsOf: function (m) { return (m.steps || m.recipe.steps).concat(Object.keys(m.cook || {}).map(function (k) { return m.cook[k]; })); },
     ingredientOptions: ingredientOptions, swapIngredient: swapIngredient,
     mealAlternatives: mealAlternatives, replaceMeal: replaceMeal, excludeFood: excludeFood,
     refreshPlan: refreshPlan, recomputeMeal: recomputeMeal,
     MIN_MEAL: MIN_MEAL, foodEntry: foodEntry, manualEntry: manualEntry, eatenOf: eatenOf, rebalanceDay: rebalanceDay,
-    per100Entry: per100Entry, markMeal: markMeal, addExtra: addExtra, removeExtra: removeExtra, searchFoods: searchFoods };
+    per100Entry: per100Entry, markMeal: markMeal, roleOf: role, fitItems: fitItems, itemsMacros: itemsMacros, menuFood: menuFood, menuSlots: menuSlots, menuMealTargets: menuMealTargets, menuRecipes: menuRecipes, menuKey: menuKey, menuPlan: menuPlan, addExtra: addExtra, removeExtra: removeExtra, searchFoods: searchFoods };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.CosfitGen = api;
 })(this);

@@ -36,6 +36,8 @@
     if (/invalid.*email|Unable to validate email/i.test(m)) return 'Adresa de email nu pare corectă.';
     if (/email rate limit/i.test(m)) return 'Nu am putut trimite acum emailul de confirmare. Încearcă din nou mai târziu sau anunță-ți antrenorul.';
     if (/rate limit|too many|For security purposes/i.test(m)) return 'Prea multe încercări. Așteaptă un minut și încearcă din nou.';
+    if (/LIMITA_CLIENTI/i.test(m)) return 'Ai atins limita de clienți a abonamentului (sau proba s-a încheiat). Arhivează un client sau alege un abonament mai mare.';
+    if (/row-level security|violates row level/i.test(m)) return 'Nu se poate salva. Dacă proba sau abonamentul tău s-au încheiat, alege un abonament din panou.';
     if (/COD_INVITARE_INVALID/i.test(m)) return 'Link-ul de invitare nu mai e valabil. Cere-i antrenorului link-ul nou.';
     if (/Database error saving new user/i.test(m)) return 'Contul nu a putut fi creat. Verifică link-ul de la antrenor și încearcă din nou.';
     if (/Failed to fetch|NetworkError|Load failed/i.test(m)) return 'Nu am putut ajunge la server. Verifică internetul și încearcă din nou.';

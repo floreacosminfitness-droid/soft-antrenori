@@ -23,7 +23,7 @@
     ['Leguminoase', function (f) { return f.cat === 'Leguminoase'; }]
   ];
 
-  var MP = { content: null, db: null, food: {}, recipe: {}, profile: null, targets: null, row: null, plan: null, day: 0, open: null, flash: '', banner: '', edit: false, alts: [], weights: [], trainer: null, me: null };
+  var MP = { content: null, db: null, food: {}, recipe: {}, profile: null, targets: null, row: null, plan: null, day: 0, open: null, flash: '', banner: '', edit: false, alts: [], weights: [], trainer: null, me: null, menu: null };
   function fname(id) { return (MP.food[id] ? MP.food[id].name : id).replace(/ \(1 .*?\)$/, ''); }
   function mpQ(seed) { var a = MP.profile.answers; return Object.assign({}, a, { exclude: (a.exclude || []).slice(), seed: seed }); }
   function T0() { var t = MP.targets; return { kcal: t.kcal, p: t.p, c: t.c, f: t.f }; }
@@ -31,7 +31,7 @@
 
   // ---------- salvarea planului (format compact, ca la COS FIT) ----------
   function serialize(p) {
-    return { warnings: p.warnings || [], checked: p.checked || {}, seedN: p.seedN || 0, days: p.days.map(function (d) {
+    return { warnings: p.warnings || [], checked: p.checked || {}, seedN: p.seedN || 0, menuV: p.menuV || null, days: p.days.map(function (d) {
       return { meals: d.meals.map(function (m) {
         var o = { rid: m.recipe.id, slot: m.slot, type: m.type, share: m.share || null, name: m.name || null, steps: m.steps || null, cook: m.cook || null, swaps: m.swaps || null, target: m.target || null,
           items: m.items.map(function (i) { return [i.id, i.g, i.label || null, i.role]; }) };
@@ -44,7 +44,7 @@
   }
   function hydrate(row) {
     var src = row.plan || {};
-    var p = { targets: row.targets, warnings: src.warnings || [], checked: src.checked || {}, seedN: src.seedN || 0, days: (src.days || []).map(function (d) {
+    var p = { targets: row.targets, warnings: src.warnings || [], checked: src.checked || {}, seedN: src.seedN || 0, menuV: src.menuV || null, days: (src.days || []).map(function (d) {
       return { meals: d.meals.filter(function (m) { return MP.recipe[m.rid]; }).map(function (m) {
         var meal = { recipe: MP.recipe[m.rid], slot: m.slot, type: m.type, target: m.target, items: m.items.filter(function (i) { return MP.food[i[0]]; }).map(function (i) {
           return { id: i[0], name: fname(i[0]), g: i[1], label: i[2], role: i[3], x: MP.food[i[0]] };
@@ -71,7 +71,8 @@
   }
   async function newPlan(start, seedN) {
     seedN = seedN || 0;
-    var plan = G.generate(MP.content, mpQ(start + '#' + seedN), { prepared: MP.db, targets: T0() });
+    // meniul făcut de antrenor are prioritate; altfel, meniul automat din rețete
+    var plan = MP.menu ? G.menuPlan(MP.content, MP.menu, T0()) : G.generate(MP.content, mpQ(start + '#' + seedN), { prepared: MP.db, targets: T0() });
     plan.seedN = seedN; plan.checked = {};
     var r = await sb.from('meal_plans').upsert({ week_start: start, targets: plan.targets, plan: serialize(plan), updated_at: new Date().toISOString() }, { onConflict: 'user_id,week_start' }).select('*').single();
     if (r.error) throw r.error;
@@ -112,6 +113,11 @@
       MP.banner = 'Antrenorul ți-a actualizat planul' + (old ? ': ' + old.kcal + ' → ' + MP.targets.kcal + ' kcal pe zi' : '') + '. Meniul de mai jos e refăcut de azi.';
       return;
     }
+    if ((MP.plan && MP.plan.menuV || null) !== G.menuKey(MP.menu)) {
+      await newPlan(t);
+      MP.banner = MP.menu ? MP.trainer.display_name + ' ți-a pregătit meniul. Îl găsești mai jos, același în fiecare zi, cu gramajele potrivite pentru tine.' : 'Antrenorul a trecut planul tău pe meniul automat, din rețete. Meniul de mai jos e refăcut de azi.';
+      return;
+    }
     MP.day = Math.max(0, Math.min(6, daysBetween(MP.row.week_start, t)));
   }
 
@@ -123,13 +129,19 @@
         sb.from('meal_content').select('data').eq('id', 1).single(),
         sb.from('meal_profiles').select('*').maybeSingle(),
         sb.from('client_targets').select('*').maybeSingle(),
-        sb.from('body_weights').select('id,measured_on,weight_kg').order('measured_on', { ascending: true }).limit(2000)
+        sb.from('body_weights').select('id,measured_on,weight_kg').order('measured_on', { ascending: true }).limit(2000),
+        sb.from('client_menus').select('*').maybeSingle()
       ]);
       var err = q.find(function (x) { return x.error; }); if (err) throw err.error;
       MP.content = q[0].data.data; MP.db = G.prepare(MP.content);
       MP.content.foods.forEach(function (f) { MP.food[f.id] = f; });
       MP.content.recipes.forEach(function (r) { MP.recipe[r.id] = r; });
       MP.profile = q[1].data || null; MP.targets = q[2].data || null; MP.weights = q[3].data || [];
+      MP.menu = q[4].data || null;
+      if (MP.menu) { // rețetele și alimentele din meniul antrenorului, ca planul salvat să le găsească
+        G.menuRecipes(MP.menu).forEach(function (r) { MP.recipe[r.id] = r; });
+        Object.keys(MP.menu.foods || {}).forEach(function (k) { MP.food[k] = MP.menu.foods[k]; });
+      }
       if (MP.profile && MP.targets) {
         var pl = await sb.from('meal_plans').select('*').order('week_start', { ascending: false }).limit(1);
         if (pl.error) throw pl.error;
@@ -145,11 +157,13 @@
     render();
   }
 
-  var ckMounted = false;
+  var ckMounted = false, chatMounted = false;
   function checkinArea() {
     var box = $('ckOut'); if (!box) return;
     var on = !!MP.profile && !MP.edit;
     App.show(box, on);
+    var ch = $('chatOut'); App.show(ch, on);
+    if (on && !chatMounted) { chatMounted = true; Chat.mount(ch, { clientId: MP.me.id, asTrainer: false, otherName: MP.trainer.display_name, collapsed: true }); }
     if (on && !ckMounted) { ckMounted = true; Checkin.mountClient(box, { clientId: MP.me.id, onWeight: async function (d, kg) { await upsertWeight(d, kg); if (!MP.edit) render(); } }); }
   }
   function render() {
@@ -181,7 +195,7 @@
       '<div class="field"><label>Obiectiv</label>' + seg('goal', [['slabire', 'Slăbire'], ['mentinere', 'Menținere'], ['masa', 'Masă musculară']], a.goal || 'slabire') + '</div>' +
       '<div class="field"><label for="mpDiet">Ce mănânci?</label><select id="mpDiet">' + opt([['clasic', 'De toate (clasic)'], ['vegetarian', 'Vegetarian'], ['fara_lactoza', 'Fără lactoză'], ['vegetarian_fara_lactoza', 'Vegetarian și fără lactoză']], a.diet || 'clasic') + '</select></div>' +
       '<div class="field"><label>Câte mese pe zi?</label>' + seg('meals', [[3, '3 mese'], [4, '3 mese + gustare'], [5, '3 mese + 2 gustări']], a.meals || 4) + '</div>' +
-      '<div class="field"><label>Cum vrei meniul?</label>' + seg('variety', [['vary', 'Varietate: mese diferite'], ['same', 'Aceleași mese în fiecare zi']], a.variety || 'vary') + '<p class="hint" style="margin:6px 0 0">Aceleași mese zilnic e mai ușor de urmat și de cumpărat; le poți schimba oricând pe o zi anume.</p></div>' +
+      '<div class="field"><label>Cum vrei meniul?</label>' + seg('variety', [['vary', 'Varietate: mese diferite'], ['same', 'Aceleași mese în fiecare zi']], a.variety || 'vary') + '<p class="hint" style="margin:6px 0 0">' + (MP.menu ? 'Acum urmezi meniul făcut de antrenorul tău. Alegerea de aici contează dacă revii la meniul automat.' : 'Aceleași mese zilnic e mai ușor de urmat și de cumpărat; le poți schimba oricând pe o zi anume.') + '</p></div>' +
       '<div class="field"><label for="mpMax">Cât timp ai de gătit pe masă?</label><select id="mpMax">' + opt([[0, 'Oricât'], [30, 'Până la 30 de minute'], [20, 'Până la 20 de minute'], [15, 'Până la 15 minute']], a.maxMinutes || 0) + '</select></div>' +
       '<div class="field"><label>Ce nu mănânci? <span class="muted">(opțional)</span></label><div class="mp-seg mp-chips" id="mpExcl">' + EXCL.map(function (e, i) { return '<button type="button" class="mp-chip' + (exOn[i] ? ' is-on' : '') + '" data-x="' + i + '">' + e[0] + '</button>'; }).join('') + '</div></div>' +
       '<label class="check" style="margin:6px 0 14px"><input type="checkbox" id="mpSafe"' + (MP.profile ? ' checked' : '') + '><span>Confirm că nu am o afecțiune pentru care medicul mi-a recomandat o dietă specială (de exemplu diabet, boli de rinichi, sarcină, tulburări de alimentație).</span></label>' +
@@ -383,7 +397,8 @@
   function planHtml() {
     var p = MP.plan, T = p.targets, prof = MP.profile, t = today();
     var h = '<div class="mp-tiles"><div class="mp-tile t-kcal"><b>' + T.kcal + '</b><span>kcal pe zi</span></div><div class="mp-tile t-p"><b>' + T.p + ' g</b><span>proteine</span></div><div class="mp-tile t-c"><b>' + T.c + ' g</b><span>carbohidrați</span></div><div class="mp-tile t-f"><b>' + T.f + ' g</b><span>grăsimi</span></div></div>';
-    h += '<p class="hint">Caloriile și macro-urile sunt stabilite de ' + esc(MP.trainer.display_name) + '. Meniul se reface singur în fiecare săptămână.</p>';
+    var LOCK = !!(MP.menu && MP.menu.locked);
+    h += '<p class="hint">' + (MP.menu ? 'Meniul, caloriile și macro-urile sunt stabilite de ' + esc(MP.trainer.display_name) + '. Meniul e același în fiecare zi.' : 'Caloriile și macro-urile sunt stabilite de ' + esc(MP.trainer.display_name) + '. Meniul se reface singur în fiecare săptămână.') + '</p>';
     if (MP.banner) h += '<div class="mp-banner">' + esc(MP.banner) + '</div>';
     (p.warnings || []).forEach(function (w) { h += '<div class="mp-warn">' + esc(w) + '</div>'; });
     if (MP.flash) { h += '<div class="mp-banner">' + esc(MP.flash) + '</div>'; MP.flash = ''; }
@@ -401,20 +416,21 @@
       d.meals.forEach(function (m, mi) {
         var op = MP.open;
         if (m.status) { h += doneMealHtml(m, mi); return; }
-        h += '<article class="card mp-meal"><div class="mp-mhead"><div><div class="mp-slot">' + esc(m.slot) + ' · ' + m.recipe.min + ' min</div><h3>' + esc(m.name || m.recipe.name) + '</h3>' + (m.changed ? '<div class="mp-recalc">Recalculată: ' + (m.changed > 0 ? '+' : '−') + R(Math.abs(m.changed)) + ' kcal față de plan</div>' : '') + '</div></div>' + nutHtml(m.macros) +
-          '<ul class="mp-ing">' + m.items.map(function (it, ii) { var on = op && op.t === 'ing' && op.mi === mi && op.ii === ii; return '<li><button type="button" data-ing="' + mi + ':' + ii + '" class="' + (on ? 'is-on' : '') + '" aria-expanded="' + !!on + '"><span>' + esc(it.name) + '</span><span>' + (it.label ? esc(it.label) + ' · ' : '') + it.g + ' g</span></button></li>'; }).join('') + '</ul>' +
+        var steps = stepsOf(m);
+        h += '<article class="card mp-meal"><div class="mp-mhead"><div><div class="mp-slot">' + esc(m.slot) + (m.recipe.min ? ' · ' + m.recipe.min + ' min' : '') + '</div><h3>' + esc(m.name || m.recipe.name) + '</h3>' + (m.changed ? '<div class="mp-recalc">Recalculată: ' + (m.changed > 0 ? '+' : '−') + R(Math.abs(m.changed)) + ' kcal față de plan</div>' : '') + '</div></div>' + nutHtml(m.macros) +
+          '<ul class="mp-ing' + (LOCK ? ' is-locked' : '') + '">' + m.items.map(function (it, ii) { var on = op && op.t === 'ing' && op.mi === mi && op.ii === ii; if (LOCK) return '<li><span>' + esc(it.name) + '</span><span>' + (it.label ? esc(it.label) + ' · ' : '') + it.g + ' g</span></li>'; return '<li><button type="button" data-ing="' + mi + ':' + ii + '" class="' + (on ? 'is-on' : '') + '" aria-expanded="' + !!on + '"><span>' + esc(it.name) + '</span><span>' + (it.label ? esc(it.label) + ' · ' : '') + it.g + ' g</span></button></li>'; }).join('') + '</ul>' +
           (m.swaps ? '<p class="mp-swapped">Înlocuit: ' + m.swaps.map(esc).join(', ') + '</p>' : '') +
           boxHtml(m, mi) +
           (op && op.t === 'other' && op.mi === mi ? logHtml('other') : '<div class="mp-eat"><button type="button" class="main" data-eat="' + mi + '">Am mâncat</button><button type="button" data-other="' + mi + '">Am mâncat altceva</button><button type="button" data-skip="' + mi + '">Sar peste</button></div>') +
-          '<div class="mp-tools"><button type="button" data-alts="' + mi + '">' + (op && op.t === 'meal' && op.mi === mi ? 'Închide' : 'Schimbă masa') + '</button></div>' +
-          '<details><summary>Cum se prepară</summary><ol>' + stepsOf(m).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>' + (m.recipe.cond ? '<p class="mp-cond">Condimente: ' + esc(m.recipe.cond) + '</p>' : '') + '</details></article>';
+          (LOCK ? '' : '<div class="mp-tools"><button type="button" data-alts="' + mi + '">' + (op && op.t === 'meal' && op.mi === mi ? 'Închide' : 'Schimbă masa') + '</button></div>') +
+          (steps.length || m.recipe.cond ? (m.recipe.trainer ? '<p class="mp-cond"><b>Indicații:</b> ' + steps.map(esc).join(' ') + '</p>' : '<details><summary>Cum se prepară</summary><ol>' + steps.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>' + (m.recipe.cond ? '<p class="mp-cond">Condimente: ' + esc(m.recipe.cond) + '</p>' : '') + '</details>') : '') + '</article>';
       });
       (d.extra || []).forEach(function (e, k) { h += '<div class="card mp-meal is-done"><div class="mp-mhead"><div><div class="mp-slot">În plus</div><h3>' + esc(e.name) + (e.g ? ' · ' + R(e.g) + ' g' : '') + '</h3></div></div>' + nutHtml(e) + '<div class="mp-tools"><button type="button" class="danger" data-xdel="' + k + '">Scoate</button></div></div>'; });
       h += MP.open && MP.open.t === 'extra' ? '<div class="card mp-meal">' + logHtml('extra') + '</div>' : '<div class="mp-eat mp-extra"><button type="button" data-extra="1">+ Am mâncat ceva în plus</button></div>';
-      h += '<p class="hint">Apasă pe un ingredient ca să-l înlocuiești. Bifează mesele pe măsură ce le mănânci: dacă mănânci altceva, mesele rămase se recalculează pe ce mai ai de mâncat. Gramajele sunt pentru alimentele crude, dacă nu scrie altfel.</p>';
+      h += '<p class="hint">' + (LOCK ? '' : 'Apasă pe un ingredient ca să-l înlocuiești. ') + 'Bifează mesele pe măsură ce le mănânci: dacă mănânci altceva, mesele rămase se recalculează pe ce mai ai de mâncat. Gramajele sunt pentru alimentele crude, dacă nu scrie altfel.</p>';
     }
     var ex = (prof.answers.exclude || []);
-    h += '<div class="mp-actions"><button type="button" data-mp="again">Alt meniu pentru săptămâna asta</button><button type="button" data-mp="edit">Modifică preferințele</button></div>';
+    h += '<div class="mp-actions">' + (MP.menu ? '' : '<button type="button" data-mp="again">Alt meniu pentru săptămâna asta</button>') + '<button type="button" data-mp="edit">Modifică preferințele</button></div>';
     if (ex.length) h += '<p class="hint" style="margin-top:14px">Nu mănânci: ' + ex.map(function (id) { return esc(fname(id).toLowerCase()); }).join(', ') + '. Poți schimba asta din „Modifică preferințele”.</p>';
     return h;
   }
