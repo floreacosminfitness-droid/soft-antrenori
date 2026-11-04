@@ -65,9 +65,22 @@
           '<div class="small muted">până la <b>' + p.clients + ' clienți activi</b> · ~' + Math.round((period === 'month' ? p.month : p.year / 12) / p.clients) + ' lei pe client pe lună</div>' +
           '<ul><li>Planuri alimentare automate pe 7 zile</li><li>Calorii și macro setate de tine</li><li>Meniu făcut de tine, când vrei</li><li>Check-in cu poze, greutate, chat</li></ul>' +
           '<p class="small muted" style="margin:0 0 10px">' + esc(p.note) + '</p>' + btn + '</div>';
-      }).join('') + '</div>' +
+      }).join('') + customHtml(b, me, email) + '</div>' +
       (ready ? '' : '<p class="msg msg-info">Plățile online se deschid în curând. Până atunci poți folosi programul în perioada de probă.</p>') +
       '<p class="small muted center" style="margin:0">Plata cu cardul, prin Stripe. Ai un cod de reducere? Îl scrii pe pagina de plată. Prețurile sunt finale (firma nu e plătitoare de TVA). Clienții arhivați nu se numără.</p>';
+  }
+
+  // planul la cerere: peste 50 de clienți
+  function customHtml(b, me, email) {
+    var mail = (App.config && App.config.CONTACT_EMAIL) || '';
+    if (!mail) return '';
+    var body = 'Bună,\n\nAș vrea o ofertă pentru peste 50 de clienți.\n\nNume: ' + (me.display_name || '') + '\nEmail cont: ' + (email || '') +
+      '\nClienți activi acum: ' + b.used + '\nCâți clienți estimez: \nTelefon: \n\nMulțumesc!';
+    var href = 'mailto:' + mail + '?subject=' + encodeURIComponent('Ofertă COS FIT Pro – peste 50 de clienți') + '&body=' + encodeURIComponent(body);
+    return '<div class="plan custom"><h3>Peste 50</h3><div class="price">La cerere</div>' +
+      '<div class="small muted">pentru <b style="color:#fff">peste 50 de clienți activi</b></div>' +
+      '<ul><li>Tot ce e în celelalte planuri</li><li>Preț pe client mai mic</li><li>Plată lunară sau anuală</li></ul>' +
+      '<p class="small muted" style="margin:0 0 10px">Îți răspundem pe email cu o ofertă.</p><a class="btn btn-block" href="' + esc(href) + '">Cere ofertă</a></div>';
   }
 
   function section(b, me, email) {

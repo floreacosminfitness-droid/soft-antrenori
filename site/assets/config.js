@@ -12,5 +12,7 @@ window.APP_CONFIG = {
     studio: { month: 'https://buy.stripe.com/5kQ5kCbHzfJf0Vo5JYcMM1l', year: 'https://buy.stripe.com/cNifZg6nf1Sp7jMegucMM1m' }
   },
   // Pagina Stripe unde antrenorul își schimbă cardul, planul sau anulează (Customer portal → link de intrare).
+  // Unde ajung cererile de ofertă pentru peste 50 de clienți (apare public pe pagina de prețuri).
+  CONTACT_EMAIL: 'wanty.brands@gmail.com',
   BILLING_PORTAL: 'https://billing.stripe.com/p/login/14A00i7rj9kRfQib4icMM00'
 };

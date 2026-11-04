@@ -249,8 +249,9 @@ textarea { width: 100%; padding: 12px 14px; font: inherit; color: inherit; borde
 .meter { height: 8px; border-radius: 99px; background: #efede8; overflow: hidden; margin-top: 6px; }
 .meter i { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
 .meter.full i { background: var(--danger); }
-.plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0; }
-@media (max-width: 720px) { .plans { grid-template-columns: 1fr; } }
+.plans { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 14px 0; }
+@media (max-width: 900px) { .plans { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .plans { grid-template-columns: 1fr; } }
 .plan { border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 6px; background: #fff; }
 .plan.best { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 .plan.cur { background: var(--accent-soft); }
@@ -261,3 +262,8 @@ textarea { width: 100%; padding: 12px 14px; font: inherit; color: inherit; borde
 .plan .btn { margin-top: auto; }
 .plan-tag { align-self: flex-start; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; background: var(--accent); color: #fff; padding: 3px 8px; border-radius: 99px; }
 .paywall { border-color: #f0c77a; background: #fffaf0; }
+
+/* planul la cerere (peste 50 de clienți) */
+.plan.custom { background: #141414; color: #fff; border-color: #141414; }
+.plan.custom .muted, .plan.custom .price small { color: #bdbab3; }
+.plan.custom .btn, .plan.custom .btn-ghost { background: #fff; color: #141414; border-color: #fff; }
