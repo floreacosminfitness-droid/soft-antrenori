@@ -7,18 +7,54 @@
 <meta name="description" content="Planuri alimentare automate pentru clienții tăi. Tu setezi caloriile, programul face meniul, lista de cumpărături și ajustările. 14 zile gratuit.">
 <link rel="stylesheet" href="assets/app.css">
 <style>
-  .hero { text-align: center; padding: 28px 0 8px; }
-  .hero h1 { font-size: clamp(1.6rem, 5vw, 2.3rem); line-height: 1.15; margin: 0 0 12px; }
-  .hero p { color: var(--muted); max-width: 560px; margin: 0 auto 18px; font-size: 1.05rem; }
-  .why { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-  @media (max-width: 720px) { .why { grid-template-columns: 1fr; } }
-  .why div { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
-  .why b { display: block; margin-bottom: 4px; }
-  .why span { font-size: .92rem; color: var(--muted); }
+  .wrap { max-width: 1040px; }
+  .hero { text-align: center; padding: 36px 0 8px; }
+  .hero h1 { font-size: clamp(1.8rem, 5.4vw, 2.8rem); line-height: 1.1; letter-spacing: -.02em; margin: 0 0 14px; }
+  .hero p.lead { color: var(--muted); max-width: 580px; margin: 0 auto 22px; font-size: 1.08rem; }
+  .hero .btn { padding: 14px 24px; }
+  .eyebrow { display: inline-block; font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+
+  .phone { width: 100%; max-width: 280px; aspect-ratio: 9 / 18; border-radius: 30px; overflow: hidden; background: #fff;
+    border: 8px solid #141414; box-shadow: 0 20px 50px rgba(0,0,0,.14), 0 4px 12px rgba(0,0,0,.08); margin: 0 auto; }
+  .phone img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  .duo { display: flex; justify-content: center; gap: 22px; margin: 34px auto 10px; max-width: 620px; }
+  .duo figure { margin: 0; flex: 1; min-width: 0; }
+  .duo figcaption { text-align: center; font-size: .86rem; color: var(--muted); margin-top: 12px; }
+  .duo figure:last-child { transform: translateY(28px); }
+  @media (max-width: 560px) { .duo { gap: 12px; } .phone { border-width: 6px; border-radius: 22px; } }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; counter-reset: s; }
+  @media (max-width: 720px) { .steps { grid-template-columns: 1fr; } }
+  .steps div { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+  .steps div::before { counter-increment: s; content: counter(s); display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 99px; background: #141414; color: #fff; font-weight: 700; font-size: .9rem; margin-bottom: 10px; }
+  .steps b { display: block; margin-bottom: 4px; }
+  .steps span { font-size: .93rem; color: var(--muted); }
+
+  .feat { display: grid; grid-template-columns: 1fr 300px; gap: 48px; align-items: center; padding: 40px 0; border-top: 1px solid var(--line); }
+  .feat:nth-of-type(even) { grid-template-columns: 300px 1fr; }
+  .feat:nth-of-type(even) .feat-txt { order: 2; }
+  .feat h2 { font-size: clamp(1.35rem, 3.6vw, 1.75rem); line-height: 1.2; letter-spacing: -.01em; margin: 0 0 10px; }
+  .feat p { color: var(--muted); margin: 0 0 14px; font-size: 1.02rem; }
+  .feat ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .feat li { padding-left: 26px; position: relative; font-size: .96rem; }
+  .feat li::before { content: ""; position: absolute; left: 0; top: .35em; width: 14px; height: 8px; border-left: 2px solid #141414; border-bottom: 2px solid #141414; transform: rotate(-45deg); }
+  .who { display: inline-block; font-size: .74rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 9px; border-radius: 99px; background: #141414; color: #fff; margin-bottom: 12px; }
+  .who.cl { background: #efede8; color: var(--ink); }
+  @media (max-width: 760px) {
+    .feat, .feat:nth-of-type(even) { grid-template-columns: 1fr; gap: 24px; padding: 32px 0; }
+    .feat:nth-of-type(even) .feat-txt { order: 0; }
+    .feat .phone { max-width: 250px; }
+  }
+
+  .section-h { text-align: center; margin: 8px 0 4px; font-size: clamp(1.4rem, 4vw, 1.9rem); letter-spacing: -.01em; }
+  .section-p { text-align: center; color: var(--muted); margin: 0 auto 18px; max-width: 560px; }
   .faq details { border-top: 1px solid var(--line); padding: 12px 0; }
   .faq summary { cursor: pointer; font-weight: 600; }
   .faq p { margin: 8px 0 0; color: var(--muted); font-size: .94rem; }
-  .calc { text-align: center; background: var(--accent-soft); border-radius: 14px; padding: 16px; font-size: .98rem; }
+  .calc { text-align: center; background: #141414; color: #fff; border-radius: 16px; padding: 22px 18px; font-size: 1.02rem; }
+  .calc b { color: #fff; }
+  .cta { text-align: center; padding: 28px 0 0; }
+  .cta h2 { font-size: clamp(1.4rem, 4vw, 1.9rem); margin: 0 0 8px; }
 </style>
 </head>
 <body>
@@ -29,19 +65,117 @@
 </header>
 <main class="wrap stack">
   <section class="hero">
-    <h1>Alimentația clienților tăi, rezolvată în 5 minute</h1>
-    <p>Tu setezi caloriile și macro-urile. Programul face meniul pe 7 zile, lista de cumpărături și ajustările zilnice. Tu doar urmărești progresul.</p>
+    <span class="eyebrow">Pentru antrenori personali</span>
+    <h1>Alimentația clienților tăi,<br>rezolvată în 5 minute</h1>
+    <p class="lead">Tu setezi caloriile și macro-urile. Programul face meniul pe 7 zile, lista de cumpărături și ajustările zilnice. Tu doar urmărești progresul.</p>
     <a class="btn" href="antrenor.html">Încearcă 14 zile gratuit</a>
-    <p class="small" style="margin-top:10px">Fără card. Fără obligații.</p>
+    <p class="small muted" style="margin-top:10px">Fără card. Fără obligații.</p>
+    <div class="duo">
+      <figure><div class="phone"><img src="assets/img/clienti.jpg" alt="Panoul antrenorului: clienții și alertele" loading="eager"></div><figcaption>Ce vezi tu</figcaption></figure>
+      <figure><div class="phone"><img src="assets/img/plan.jpg" alt="Planul alimentar al clientului pe 7 zile" loading="eager"></div><figcaption>Ce vede clientul</figcaption></figure>
+    </div>
   </section>
 
-  <section class="why">
-    <div><b>Fără ore pierdute pe planuri</b><span>191 de rețete românești, gramaje calculate exact pe caloriile clientului, refăcute singure în fiecare săptămână.</span></div>
-    <div><b>Abordarea ta, nu a programului</b><span>Calorii și macro în grame, procente sau g/kg. Sau faci tu meniul din alimente, iar gramajele se potrivesc singure.</span></div>
-    <div><b>Vezi cine se ține de plan</b><span>Procent de mese respectate, greutate, check-in cu poze și măsurători, alerte și chat cu fiecare client.</span></div>
+  <section style="padding-top:36px">
+    <h2 class="section-h">Cum funcționează</h2>
+    <p class="section-p">Fără tabele, fără PDF-uri trimise pe WhatsApp.</p>
+    <div class="steps">
+      <div><b>Trimiți link-ul tău</b><span>Clientul își face cont gratuit și completează vârsta, greutatea, preferințele și alimentele pe care nu le mănâncă.</span></div>
+      <div><b>Setezi caloriile</b><span>Calculatorul îți propune cifrele. Tu le schimbi cum crezi: în procente, grame sau g/kg corp.</span></div>
+      <div><b>Clientul primește planul</b><span>Meniu pe 7 zile cu rețete și gramaje exacte, refăcut singur în fiecare săptămână.</span></div>
+    </div>
   </section>
 
-  <section class="card">
+  <section>
+    <div class="feat">
+      <div class="feat-txt">
+        <span class="who cl">Pentru client</span>
+        <h2>Un plan pe care chiar îl poate urma</h2>
+        <p>Rețete românești simple, cu gramajele calculate pe caloriile lui. Pe telefon, mereu la îndemână.</p>
+        <ul>
+          <li>191 de rețete, cu timp de preparare și pași</li>
+          <li>Bifează „Am mâncat”, „Altceva” sau „Sar peste”</li>
+          <li>Restul zilei se recalculează singur</li>
+          <li>Poate schimba o masă sau un ingredient, dacă îi permiți</li>
+        </ul>
+      </div>
+      <div class="phone"><img src="assets/img/plan.jpg" alt="Planul zilei cu mesele și gramajele" loading="lazy"></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-txt">
+        <span class="who cl">Pentru client</span>
+        <h2>Lista de cumpărături, gata făcută</h2>
+        <p>Toate ingredientele din săptămână, adunate și împărțite pe raioane. Clientul bifează ce a luat din magazin.</p>
+        <ul>
+          <li>Cantitățile puse la un loc pentru toată săptămâna</li>
+          <li>Grupate pe categorii, ca la supermarket</li>
+          <li>Se schimbă automat când se schimbă planul</li>
+        </ul>
+      </div>
+      <div class="phone"><img src="assets/img/cumparaturi.jpg" alt="Lista de cumpărături pe categorii" loading="lazy"></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-txt">
+        <span class="who">Pentru tine</span>
+        <h2>Abordarea ta, nu a programului</h2>
+        <p>Tu decizi cifrele. Programul face doar munca grea: rețete, gramaje și ajustări.</p>
+        <ul>
+          <li>Calorii și macro în procente, în grame sau în g/kg corp</li>
+          <li>Calculator precompletat cu datele clientului</li>
+          <li>Planul se reface imediat ce schimbi caloriile</li>
+        </ul>
+      </div>
+      <div class="phone"><img src="assets/img/calorii.jpg" alt="Setarea caloriilor și a macro-urilor" loading="lazy"></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-txt">
+        <span class="who">Pentru tine</span>
+        <h2>Sau faci tu meniul, din alimente</h2>
+        <p>Pentru clienții care vor să mănânce mereu același lucru. Alegi alimentele pentru fiecare masă, iar gramajele se potrivesc singure pe ținta lui.</p>
+        <ul>
+          <li>Peste 300 de alimente, plus cele adăugate de tine</li>
+          <li>Un buton și gramajele se potrivesc pe calorii și macro</li>
+          <li>Hotărăști tu dacă clientul poate schimba ceva</li>
+        </ul>
+      </div>
+      <div class="phone"><img src="assets/img/meniu.jpg" alt="Meniul făcut de antrenor din alimente" loading="lazy"></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-txt">
+        <span class="who">Pentru tine</span>
+        <h2>Vezi dintr-o privire cine se ține de plan</h2>
+        <p>Nu mai întrebi pe fiecare cum a mers săptămâna. Panoul îți arată cine are nevoie de tine acum.</p>
+        <ul>
+          <li>Procentul de mese respectate în ultimele 7 zile</li>
+          <li>Greutatea și cât a slăbit de la început</li>
+          <li>Alerte când cineva nu mai intră sau stă pe loc</li>
+        </ul>
+      </div>
+      <div class="phone"><img src="assets/img/clienti.jpg" alt="Lista clienților cu alerte și procente" loading="lazy"></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-txt">
+        <span class="who">Pentru amândoi</span>
+        <h2>Chat, greutate și check-in, în același loc</h2>
+        <p>Toată relația cu clientul într-o singură fișă: mesajele, graficul greutății și check-in-urile cu poze și măsurători.</p>
+        <ul>
+          <li>Chat cu fiecare client, cu mesajele necitite marcate</li>
+          <li>Grafic de greutate, actualizat de client</li>
+          <li>Check-in cu poze față, profil, spate și măsurători</li>
+        </ul>
+      </div>
+      <div class="phone"><img src="assets/img/chat.jpg" alt="Chatul cu clientul și graficul greutății" loading="lazy"></div>
+    </div>
+  </section>
+
+  <p class="calc"><b>Socoteala simplă:</b> dacă ceri unui singur client 150–300 lei în plus pe lună pentru planul alimentar, abonamentul se plătește singur.</p>
+
+  <section class="card" id="preturi">
     <h2 style="text-align:center;margin-bottom:4px">Prețuri</h2>
     <p class="muted center" style="margin:0 0 6px">Plătești după câți clienți activi ai. Clienții arhivați nu se numără.</p>
     <div class="tabs" id="per" style="max-width:340px;margin:10px auto 4px">
@@ -49,10 +183,8 @@
       <button type="button" data-per="year">Anual · 2 luni gratuite</button>
     </div>
     <div class="plans" id="plans"></div>
-    <p class="small muted center" style="margin:0">Prețuri finale în lei. Plata cu cardul, prin Stripe. Poți schimba sau anula oricând.</p>
+    <p class="small muted center" style="margin:0">Toate funcțiile sunt incluse în fiecare plan. Diferă doar numărul de clienți.<br>Prețuri finale în lei. Plata cu cardul, prin Stripe. Poți schimba sau anula oricând. Peste 50 de clienți? Scrie-ne.</p>
   </section>
-
-  <p class="calc"><b>Socoteala simplă:</b> dacă ceri unui singur client 150–300 lei în plus pe lună pentru planul alimentar, abonamentul se plătește singur.</p>
 
   <section class="card faq">
     <h2>Întrebări</h2>
@@ -60,7 +192,14 @@
     <details><summary>Clienții plătesc ceva?</summary><p>Nu. Clientul își face cont gratuit din link-ul tău și te plătește pe tine, ca până acum.</p></details>
     <details><summary>Ce se întâmplă când ajung la limita de clienți?</summary><p>Nu se oprește nimic: clienții existenți merg normal. Doar clienții noi nu se mai pot înscrie până treci la planul următor sau arhivezi pe cineva.</p></details>
     <details><summary>Pot face eu meniul unui client?</summary><p>Da. Alegi alimentele pentru fiecare masă, iar programul potrivește gramajele la caloriile clientului. Hotărăști tu dacă clientul poate schimba ceva.</p></details>
+    <details><summary>Merge și pentru clienții de la sală?</summary><p>Da. Le dai link-ul, își fac contul în 2 minute și au planul pe telefon. Tu îl ajustezi între antrenamente.</p></details>
     <details><summary>Cum primesc factura?</summary><p>După fiecare plată primești pe email confirmarea plății și factura.</p></details>
+  </section>
+
+  <section class="cta">
+    <h2>Încearcă pe clienții tăi</h2>
+    <p class="muted" style="margin:0 0 16px">14 zile gratuit, până la 10 clienți. Fără card.</p>
+    <a class="btn" href="antrenor.html">Creează cont de antrenor</a>
   </section>
 </main>
 <script>
@@ -76,7 +215,7 @@
       return '<div class="plan' + (p.best ? ' best' : '') + '">' + (p.best ? '<span class="plan-tag">Recomandat</span>' : '') + '<h3>' + p.name + '</h3>' +
         '<div class="price">' + lei(per === 'month' ? p.month : p.year) + ' <small>/ ' + (per === 'month' ? 'lună' : 'an') + '</small></div>' +
         '<div class="small muted">până la <b>' + p.clients + ' clienți activi</b> · ~' + Math.round((per === 'month' ? p.month : p.year / 12) / p.clients) + ' lei pe client pe lună</div>' +
-        '<ul><li>Planuri alimentare automate</li><li>Meniu făcut de tine, când vrei</li><li>Check-in cu poze și măsurători</li><li>Alerte și chat cu clienții</li></ul>' +
+        '<ul><li>Planuri alimentare automate</li><li>Meniu făcut de tine, când vrei</li><li>Lista de cumpărături</li><li>Check-in cu poze și măsurători</li><li>Alerte și chat cu clienții</li></ul>' +
         '<p class="small muted" style="margin:0 0 10px">' + p.note + '</p><a class="btn btn-block' + (p.best ? '' : ' btn-ghost') + '" href="antrenor.html">Începe gratuit</a></div>';
     }).join('');
   }
