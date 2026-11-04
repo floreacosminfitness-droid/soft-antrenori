@@ -6,6 +6,7 @@
 <title>Prețuri · COS FIT Pro</title>
 <meta name="description" content="Planuri alimentare automate pentru clienții tăi. Tu setezi caloriile, programul face meniul, lista de cumpărături și ajustările. 14 zile gratuit.">
 <link rel="stylesheet" href="assets/app.css">
+<script src="assets/config.js"></script>
 <style>
   .wrap { max-width: 1040px; }
   .hero { text-align: center; padding: 36px 0 8px; }
@@ -183,7 +184,7 @@
       <button type="button" data-per="year">Anual · 2 luni gratuite</button>
     </div>
     <div class="plans" id="plans"></div>
-    <p class="small muted center" style="margin:0">Toate funcțiile sunt incluse în fiecare plan. Diferă doar numărul de clienți.<br>Prețuri finale în lei. Plata cu cardul, prin Stripe. Poți schimba sau anula oricând. Peste 50 de clienți? Scrie-ne.</p>
+    <p class="small muted center" style="margin:0">Toate funcțiile sunt incluse în fiecare plan. Diferă doar numărul de clienți.<br>Prețuri finale în lei. Plata cu cardul, prin Stripe. Poți schimba sau anula oricând.</p>
   </section>
 
   <section class="card faq">
@@ -217,7 +218,16 @@
         '<div class="small muted">până la <b>' + p.clients + ' clienți activi</b> · ~' + Math.round((per === 'month' ? p.month : p.year / 12) / p.clients) + ' lei pe client pe lună</div>' +
         '<ul><li>Planuri alimentare automate</li><li>Meniu făcut de tine, când vrei</li><li>Lista de cumpărături</li><li>Check-in cu poze și măsurători</li><li>Alerte și chat cu clienții</li></ul>' +
         '<p class="small muted" style="margin:0 0 10px">' + p.note + '</p><a class="btn btn-block' + (p.best ? '' : ' btn-ghost') + '" href="antrenor.html">Începe gratuit</a></div>';
-    }).join('');
+    }).join('') + customPlan();
+  }
+  function customPlan() {
+    var mail = (window.APP_CONFIG && window.APP_CONFIG.CONTACT_EMAIL) || '';
+    var href = 'mailto:' + mail + '?subject=' + encodeURIComponent('Ofertă COS FIT Pro – peste 50 de clienți') +
+      '&body=' + encodeURIComponent('Bună,\n\nAș vrea o ofertă pentru COS FIT Pro.\n\nNume / firmă:\nCâți clienți activi am acum:\nCâți clienți estimez:\nTelefon:\n\nMulțumesc!');
+    return '<div class="plan custom"><h3>Peste 50</h3><div class="price">La cerere</div>' +
+      '<div class="small muted">pentru <b style="color:#fff">peste 50 de clienți activi</b></div>' +
+      '<ul><li>Tot ce e în planurile de mai sus</li><li>Preț pe client mai mic</li><li>Plată lunară sau anuală</li><li>Te ajutăm la pornire</li></ul>' +
+      '<p class="small muted" style="margin:0 0 10px">Pentru antrenorii online mari și studiouri.</p><a class="btn btn-block" href="' + href + '">Cere ofertă</a></div>';
   }
   document.getElementById('per').addEventListener('click', function (e) {
     var b = e.target.closest('[data-per]'); if (!b) return; per = b.getAttribute('data-per');
