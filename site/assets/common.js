@@ -104,13 +104,13 @@
     var xl = '<text x="' + x(pts[0].d) + '" y="' + (H - 10) + '" text-anchor="start" font-size="19" fill="#6b6a66">' + fmt(pts[0].d) + '</text>';
     if (pts.length > 1) xl += '<text x="' + x(pts[pts.length - 1].d) + '" y="' + (H - 10) + '" text-anchor="end" font-size="19" fill="#6b6a66">' + fmt(pts[pts.length - 1].d) + '</text>';
     var path = pts.map(function (p, k) { return (k ? 'L' : 'M') + x(p.d).toFixed(1) + ' ' + y(p.v).toFixed(1); }).join(' ');
-    var dots = pts.map(function (p) { return '<circle cx="' + x(p.d).toFixed(1) + '" cy="' + y(p.v).toFixed(1) + '" r="6" fill="#1f6f5c"><title>' + fmt(p.d) + ': ' + dec(p.v) + ' ' + unit + '</title></circle>'; }).join('');
+    var dots = pts.map(function (p) { return '<circle cx="' + x(p.d).toFixed(1) + '" cy="' + y(p.v).toFixed(1) + '" r="6" fill="#141414"><title>' + fmt(p.d) + ': ' + dec(p.v) + ' ' + unit + '</title></circle>'; }).join('');
     var first = pts[0].v, last = pts[pts.length - 1].v, diff = Math.round((last - first) * 10) / 10;
     var stats = '<div class="chart-stats"><div><b>' + dec(last) + ' ' + unit + '</b><span>acum</span></div>' +
       '<div><b>' + (diff > 0 ? '+' : diff < 0 ? '−' : '') + dec(Math.abs(diff)) + ' ' + unit + '</b><span>față de început</span></div>' +
       '<div><b>' + pts.length + '</b><span>' + (pts.length === 1 ? 'înregistrare' : 'înregistrări') + '</span></div></div>';
     return stats + '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(label || 'Evoluție') + ': de la ' + dec(first) + ' la ' + dec(last) + ' ' + unit + '">' +
-      grid + xl + '<path d="' + path + '" fill="none" stroke="#1f6f5c" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>' + dots + '</svg>';
+      grid + xl + '<path d="' + path + '" fill="none" stroke="#141414" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>' + dots + '</svg>';
   }
 
   // ---- poze: micșorate în browser înainte de urcare (max 1400 px, JPEG) ----

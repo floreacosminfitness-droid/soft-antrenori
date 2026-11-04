@@ -25,7 +25,7 @@
 .mp-tile.t-p b { color: var(--n-p); } .mp-tile.t-c b { color: var(--n-c); } .mp-tile.t-f b { color: var(--n-f); }
 @media (max-width: 420px) { .mp-tile b { font-size: 1.02rem; } }
 
-.mp-banner { background: var(--accent-soft); color: #174f41; border-radius: 12px; padding: 12px 14px; margin: 0 0 12px; font-size: .92rem; }
+.mp-banner { background: var(--accent-soft); color: var(--ink); border-radius: 12px; padding: 12px 14px; margin: 0 0 12px; font-size: .92rem; }
 .mp-warn { background: #fff4e0; color: #7a4d00; border-radius: 12px; padding: 10px 14px; margin: 0 0 12px; font-size: .9rem; }
 
 .mp-days { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 8px; margin: 0 -2px 6px; scrollbar-width: none; }
