@@ -1,3 +1,8 @@
+// Adresa oficială e coachmeal.app: adresa veche și www trimit automat acolo (cu tot cu calea și link-urile din emailuri).
+(function () {
+  var h = location.hostname;
+  if (h === 'soft-antrenori.pages.dev' || h === 'www.coachmeal.app') location.replace('https://coachmeal.app' + location.pathname + location.search + location.hash);
+})();
 // Proiectul Supabase „soft-antrenori” (Frankfurt), separat de COS FIT.
 // Cheia „publishable” e făcută să fie publică; protecția vine din regulile din baza de date.
 // NU pune aici cheia „secret” / „service_role”.
@@ -15,6 +20,6 @@ window.APP_CONFIG = {
   // Unde ajung cererile de ofertă pentru peste 50 de clienți (apare public pe pagina de prețuri).
   // Datele firmei, afișate în subsolul paginii publice.
   COMPANY: { name: '', cui: '42638994', reg: '', address: '' },
-  CONTACT_EMAIL: 'wanty.brands@gmail.com',
+  CONTACT_EMAIL: 'support@coachmeal.app',
   BILLING_PORTAL: 'https://billing.stripe.com/p/login/14A00i7rj9kRfQib4icMM00'
 };
