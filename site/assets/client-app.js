@@ -115,8 +115,9 @@
       return;
     }
     if ((MP.plan && MP.plan.menuV || null) !== G.menuKey(MP.menu)) {
+      var hadMenu = !!(MP.plan && MP.plan.menuV);
       await newPlan(t);
-      MP.banner = MP.menu ? MP.trainer.display_name + (POOL() ? ' ți-a ales alimentele. Din ele ai mai jos mese diferite în fiecare zi, cu gramajele potrivite pentru tine.' : ' ți-a pregătit meniul. Îl găsești mai jos, același în fiecare zi, cu gramajele potrivite pentru tine.') : 'Antrenorul a trecut planul tău pe meniul automat, din rețete. Meniul de mai jos e refăcut de azi.';
+      MP.banner = MP.menu && hadMenu ? MP.trainer.display_name + ' ți-a actualizat meniul. Mesele și lista de cumpărături de mai jos sunt refăcute.' : MP.menu ? MP.trainer.display_name + (POOL() ? ' ți-a ales alimentele. Din ele ai mai jos mese diferite în fiecare zi, cu gramajele potrivite pentru tine.' : ' ți-a pregătit meniul. Îl găsești mai jos, același în fiecare zi, cu gramajele potrivite pentru tine.') : 'Antrenorul a trecut planul tău pe meniul automat, din rețete. Meniul de mai jos e refăcut de azi.';
       return;
     }
     MP.day = Math.max(0, Math.min(6, daysBetween(MP.row.week_start, t)));
@@ -157,6 +158,33 @@
     }
     render();
   }
+
+  // ---------- modificările antrenorului ajung și când aplicația e deja deschisă ----------
+  // (pe telefon aplicația stă deschisă zile întregi; verificăm la revenirea în aplicație și o dată pe minut)
+  var rechecking = false;
+  async function recheck() {
+    if (rechecking || !MP.profile || !MP.content || MP.edit || MP.log || document.hidden) return;
+    rechecking = true;
+    try {
+      var q = await Promise.all([sb.from('client_targets').select('*').maybeSingle(), sb.from('client_menus').select('*').maybeSingle()]);
+      if (q[0].error || q[1].error) return;
+      var nt = q[0].data || null, nm = q[1].data || null;
+      var changed = !!nt !== !!MP.targets || (nt && !sameTargets(nt, MP.targets)) || G.menuKey(nm) !== G.menuKey(MP.menu) || (!!nm && !!MP.menu && nm.locked !== MP.menu.locked);
+      if (!changed) return;
+      MP.targets = nt; MP.menu = nm;
+      if (MP.menu) {
+        G.menuRecipes(MP.menu).forEach(function (r) { MP.recipe[r.id] = r; });
+        Object.keys(MP.menu.foods || {}).forEach(function (k) { MP.food[k] = MP.menu.foods[k]; });
+      }
+      var keepDay = MP.day;
+      if (MP.targets) { await maintain(); if (keepDay === 'shop') MP.day = 'shop'; }
+      MP.open = null;
+      render();
+    } catch (e) { /* fără internet: încercăm data viitoare */ } finally { rechecking = false; }
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) recheck(); });
+  window.addEventListener('focus', recheck);
+  setInterval(recheck, 60000);
 
   var ckMounted = false, chatMounted = false;
   function checkinArea() {
