@@ -750,8 +750,152 @@
       return { id: 'tm' + k, name: m.name || m.slot, meal: m.type || 'pc', min: 0, steps: m.note ? [m.note] : [], cond: null, veg: false, lf: false, trainer: true, ing: [] };
     });
   }
-  function menuKey(menu) { return menu ? String(hash(JSON.stringify([menu.meals, menu.foods, menu.targets]))) : null; }
+  function menuKey(menu) {
+    if (!menu) return null;
+    var k = [menu.meals, menu.foods, menu.targets];
+    if (menu.mode === 'pool') k.push('pool', menu.pool);
+    return String(hash(JSON.stringify(k)));
+  }
+  // fara nume dat de antrenor: numele din alimente (ex. „Piept de pui, orez basmati și broccoli”)
+  function autoName(items, fallback) {
+    var nm = items.filter(function (i) { return i.x.kcal < 800; }).slice(0, 3).map(function (i, j) {
+      var t = (i.name || i.x.name).replace(/ \(.*?\)$/, ''); return j ? t.charAt(0).toLowerCase() + t.slice(1) : t;
+    });
+    return nm.length > 1 ? nm.slice(0, -1).join(', ') + ' și ' + nm[nm.length - 1] : nm[0] || fallback;
+  }
+
+  // ---- Soft antrenori: meniul din alimentele alese de antrenor ----
+  // Antrenorul alege doar alimentele permise (pool: { md: [id], pc: [id], g: [id] }),
+  // iar programul face singur mese variate pe 7 zile, cu gramajele potrivite pe tintele lui.
+  var VEG_CATS = { 'Legume': 1, 'Conserve și sosuri': 1 };
+  function poolKind(x) {
+    var e = x.p * 4 + x.c * 4 + x.f * 9 || 1;
+    if (VEG_CATS[x.cat] && x.kcal < 100) return 'veg';
+    if (x.cat === 'Fructe' && x.f * 9 / e < 0.5) return 'fruit';
+    if (x.p * 4 / e >= 0.3 && x.kcal >= 45 || x.p * 4 / e >= 0.45) return 'prot';
+    if (x.f * 9 / e >= 0.5) return 'fat';
+    if (x.kcal < 45 && !/Lactate|Băuturi/.test(x.cat || '')) return 'veg';
+    return 'carb';
+  }
+  var POOL_KINDS = [['prot', 'Proteine'], ['carb', 'Carbohidrați'], ['veg', 'Legume'], ['fruit', 'Fructe'], ['fat', 'Grăsimi']];
+  // ce lista folosim la fiecare tip de masa: daca antrenorul n-a ales separat, luam lista de la prânz/cină
+  function poolFor(pool, type) {
+    pool = pool || {};
+    var order = type === 'md' ? ['md', 'pc'] : type === 'g' ? ['g', 'md', 'pc'] : ['pc'];
+    for (var i = 0; i < order.length; i++) if (pool[order[i]] && pool[order[i]].length) return pool[order[i]];
+    return [];
+  }
+  function groupPool(ids, food) {
+    var g = { prot: [], carb: [], veg: [], fruit: [], fat: [] };
+    (ids || []).forEach(function (id) { var x = food[id]; if (x) g[poolKind(x)].push(x); });
+    return g;
+  }
+  // amesteca lista cu samanta (Fisher-Yates)
+  function shuffled(a, R) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(R() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  // ia pe rand din lista amestecata, sarind peste ce nu se potriveste (daca se poate)
+  function picker(list, R) {
+    var order = shuffled(list, R), k = 0;
+    return function (avoid) {
+      if (!order.length) return null;
+      for (var t = 0; t < order.length; t++) {
+        var x = order[(k + t) % order.length];
+        if (!avoid || !avoid[x.id] || t === order.length - 1) { k = (k + t + 1) % order.length; return x; }
+      }
+      return null;
+    };
+  }
+  // cat de mult din fiecare aliment, ca punct de plecare (dupa care fitItems potriveste exact)
+  function startGrams(x, kind, kcal, type) {
+    var share = { prot: type === 'g' ? 0.5 : 0.38, carb: type === 'g' ? 0.4 : 0.42, fat: 0.12, fruit: type === 'pc' ? 0.12 : 0.22, veg: 0 }[kind];
+    if (kind === 'veg') return type === 'pc' ? 150 : 100;
+    return Math.max(5, share * kcal / Math.max(1, x.kcal) * 100);
+  }
+  function composeMeal(G, type, MT, pick, used, forceNoLeg) {
+    var items = [], lean = true;
+    var add2 = function (x, kind) { if (x && !items.some(function (i) { return i.id === x.id; })) items.push({ id: x.id, g: startGrams(x, kind, MT.kcal, type), x: x, kind: kind }); };
+    var prot = pick.prot(used);
+    if (prot) { add2(prot, 'prot'); lean = items[0].g * prot.f / 100 < MT.f * 0.75; } // proteina nu aduce destula grasime: adaugam o grasime
+    // cu o proteina in farfurie, carbohidratul nu e tot o leguminoasa (altfel fasolea/năutul ar înlocui carnea)
+    var noLeg = prot && (forceNoLeg || pick.r() < 0.65) ? pick.legumes : null;
+    if (type === 'pc') {
+      add2(pick.carb(noLeg) || pick.fruit(), 'carb');
+      add2(pick.veg(), 'veg');
+      if (G.veg.length > 2 && MT.kcal > 450) add2(pick.veg(), 'veg');
+      if (lean) add2(pick.fat(), 'fat');
+    } else if (type === 'md') {
+      add2(pick.carb(noLeg) || pick.fruit(), 'carb');
+      if (G.fruit.length && (!G.veg.length || pick.r() < 0.6)) add2(pick.fruit(), 'fruit'); else add2(pick.veg(), 'veg');
+      if (lean) add2(pick.fat(), 'fat');
+    } else {
+      if (G.fruit.length && pick.r() < 0.6) add2(pick.fruit(), 'fruit'); else add2(pick.carb() || pick.fruit(), 'carb');
+      if (!prot) add2(pick.fat(), 'fat');
+    }
+    if (!items.length) return [];
+    return items;
+  }
+  function poolPlan(data, menu, targetsIn, opts) {
+    opts = opts || {};
+    var T = fixedTargets(targetsIn), food = menuFood(data, menu), recs = menuRecipes(menu);
+    var n = menu.meals.length, MTs = menuMealTargets(T, n, opts.config), slots = menuSlots(n, opts.config);
+    var R = rng(hash(String(opts.seed || 'saptamana') + '|' + menuKey(menu)));
+    var warnings = [];
+    // pentru fiecare tip de masa: alimentele grupate si cate un „picker” pe grup, ca sa varieze de la o zi la alta
+    var byType = {};
+    ['md', 'pc', 'g'].forEach(function (t) {
+      var G = groupPool(poolFor(menu.pool, t), food), pk = { r: R };
+      POOL_KINDS.forEach(function (k) { pk[k[0]] = picker(G[k[0]], R); });
+      pk.legumes = {}; G.carb.forEach(function (x) { if (x.cat === 'Leguminoase') pk.legumes[x.id] = 1; });
+      byType[t] = { G: G, pick: pk };
+    });
+    if (!byType.pc.G.prot.length) warnings.push('Nu ai ales nicio sursă de proteine pentru prânz și cină.');
+    if (!byType.pc.G.carb.length) warnings.push('Nu ai ales niciun carbohidrat (orez, cartofi, paste, pâine) pentru prânz și cină.');
+    var fatty = ['md', 'pc', 'g'].some(function (t) { var G = byType[t].G; return G.fat.length || G.prot.some(function (x) { return x.f * 9 / Math.max(1, x.kcal) >= 0.35; }); });
+    if (!fatty && T.f > 30) warnings.push('Nu ai ales nicio sursă de grăsimi (ulei, nuci, avocado, ouă, somon), așa că grăsimile vor ieși sub țintă.');
+    var days = [], lastProt = {};
+    for (var d = 0; d < 7; d++) {
+      var usedToday = {}, eaten = zero(), meals = [];
+      for (var k = 0; k < n; k++) {
+        var m = menu.meals[k] || {}, type = m.type || slots[k][0], bt = byType[type] || byType.pc;
+        var MT = MTs[k];
+        // fiecare masa ia partea ei din ce a mai ramas din zi, asa ca abaterile meselor de dinainte se recupereaza
+        // (cu limite, ca o masa sa nu iasa ciudat de mare sau de mica)
+        if (k > 0) {
+          var restShare = 0; for (var j = k; j < n; j++) restShare += slots[j][2];
+          var sh = MT.share / restShare, base = MT;
+          var lim = function (left, b, lo, hi) { return Math.max(b * lo, Math.min(b * hi, left * sh)); };
+          MT = { kcal: lim(T.kcal - eaten.kcal, base.kcal, 0.7, 1.35), p: lim(T.p - eaten.p, base.p, 0.5, 1.6), c: lim(T.c - eaten.c, base.c, 0.5, 1.6), f: lim(T.f - eaten.f, base.f, 0.4, 1.9), share: base.share };
+        }
+        // aceeasi proteina nu apare de doua ori in aceeasi zi si nici la aceeasi masa ca ieri (cand avem de unde alege)
+        var avoid = Object.assign({}, usedToday); if (lastProt[k]) avoid[lastProt[k]] = 1;
+        var raw = composeMeal(bt.G, type, MT, bt.pick, avoid);
+        var fitted = raw.length ? fitItems(raw, MT) : [];
+        // o leguminoasa (năut, fasole) a „mâncat” proteina principală: refacem masa cu alt carbohidrat
+        var prot0 = raw.filter(function (i) { return i.kind === 'prot'; })[0], leg = raw.some(function (i) { return i.kind === 'carb' && bt.pick.legumes[i.id]; });
+        if (prot0 && leg && fitted.some(function (i) { return i.id === prot0.id && i.g < prot0.g * 0.5; })) {
+          var raw2 = composeMeal(bt.G, type, MT, bt.pick, avoid, true);
+          if (!raw2.some(function (i) { return i.kind === 'carb' && bt.pick.legumes[i.id]; })) { raw = raw2; fitted = fitItems(raw, MT); }
+        }
+        var meal = { recipe: recs[k], slot: m.slot || slots[k][1], type: type, share: slots[k][2], target: MTs[k],
+          items: fitted.map(function (i) { return { id: i.id, name: i.x.name.replace(/ \(1 .*?\)$/, ''), g: i.g, label: i.label, x: i.x, role: role(i.x) }; }) };
+        // proteina principala sus, apoi carbohidratul, legumele, grasimea
+        var ord = { prot: 0, carb: 1, fruit: 2, veg: 3, fat: 4 };
+        meal.items.sort(function (a, b) { return ord[poolKind(a.x)] - ord[poolKind(b.x)]; });
+        meal.name = autoName(meal.items, meal.slot);
+        recomputeMeal(meal);
+        add(eaten, meal.macros);
+        var pr = raw.filter(function (i) { return i.kind === 'prot'; })[0];
+        if (pr) { usedToday[pr.id] = 1; lastProt[k] = pr.id; }
+        meals.push(meal);
+      }
+      days.push({ meals: meals });
+    }
+    var plan = refreshPlan({ targets: T, days: days, warnings: warnings, slots: slots.map(function (s) { return s[1]; }) });
+    plan.menuV = menuKey(menu);
+    return plan;
+  }
+
   function menuPlan(data, menu, targetsIn, opts) {
+    if (menu && menu.mode === 'pool') return poolPlan(data, menu, targetsIn, opts);
     opts = opts || {};
     var T = fixedTargets(targetsIn), food = menuFood(data, menu), recs = menuRecipes(menu);
     var n = menu.meals.length, MTs = menuMealTargets(T, n, opts.config), slots = menuSlots(n, opts.config);
@@ -770,9 +914,7 @@
           var rd = { g: Math.round(i.g), label: i.label || (i.id === 'ou' ? Math.max(1, Math.round(i.g / 55)) + (Math.round(i.g / 55) > 1 ? ' ouă' : ' ou') : null) };
           return { id: i.id, name: i.x.name.replace(/ \(1 .*?\)$/, ''), g: rd.g, label: rd.label, x: i.x, role: role(i.x) };
         }) };
-      // fara nume dat de antrenor: numele din alimente (ex. „Piept de pui, orez basmati și broccoli”)
-      var nm = meal.items.filter(function (i) { return i.x.kcal < 800; }).slice(0, 3).map(function (i, j) { var t = i.name.replace(/ \(.*?\)$/, ''); return j ? t.charAt(0).toLowerCase() + t.slice(1) : t; });
-      meal.name = m.name || (nm.length > 1 ? nm.slice(0, -1).join(', ') + ' și ' + nm[nm.length - 1] : nm[0] || meal.slot);
+      meal.name = m.name || autoName(meal.items, meal.slot);
       return recomputeMeal(meal);
     });
     var days = [];
@@ -788,6 +930,6 @@
     mealAlternatives: mealAlternatives, replaceMeal: replaceMeal, excludeFood: excludeFood,
     refreshPlan: refreshPlan, recomputeMeal: recomputeMeal,
     MIN_MEAL: MIN_MEAL, foodEntry: foodEntry, manualEntry: manualEntry, eatenOf: eatenOf, rebalanceDay: rebalanceDay,
-    per100Entry: per100Entry, markMeal: markMeal, roleOf: role, fitItems: fitItems, itemsMacros: itemsMacros, menuFood: menuFood, menuSlots: menuSlots, menuMealTargets: menuMealTargets, menuRecipes: menuRecipes, menuKey: menuKey, menuPlan: menuPlan, addExtra: addExtra, removeExtra: removeExtra, searchFoods: searchFoods };
+    per100Entry: per100Entry, markMeal: markMeal, roleOf: role, fitItems: fitItems, itemsMacros: itemsMacros, menuFood: menuFood, menuSlots: menuSlots, menuMealTargets: menuMealTargets, menuRecipes: menuRecipes, menuKey: menuKey, menuPlan: menuPlan, poolPlan: poolPlan, poolKind: poolKind, POOL_KINDS: POOL_KINDS, poolFor: poolFor, autoName: autoName, addExtra: addExtra, removeExtra: removeExtra, searchFoods: searchFoods };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.CosfitGen = api;
 })(this);

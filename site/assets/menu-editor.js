@@ -1,5 +1,7 @@
-// Meniul făcut de antrenor: o zi de mese construită din alimente, repetată toată săptămâna.
-// Gramajele se pot potrivi automat la caloriile și macro-urile fiecărei mese.
+// Meniul făcut de antrenor, în două feluri:
+//  - „Aleg alimentele” (mode 'pool'): antrenorul alege alimentele permise, programul face mese variate pe 7 zile;
+//  - „Fac eu fiecare masă” (mode 'meals'): o zi de mese construită din alimente, repetată toată săptămâna.
+// Gramajele se potrivesc automat la caloriile și macro-urile fiecărei mese.
 // Expune window.MenuEditor.mount(el, { me, client, targets, profile }) și .setTargets(t).
 (function () {
   var App = window.App, G = window.CosfitGen, sb = App.sb, esc = App.esc;
@@ -25,10 +27,12 @@
   function slotsFor(n) { return G.menuSlots(n); }
   function newDraft() {
     var n = +((E.profile && E.profile.answers && E.profile.answers.meals) || 4);
-    return { meals: slotsFor(n).map(function (s) { return { slot: s[1], type: s[0], name: '', note: '', items: [] }; }), foods: {}, locked: true };
+    return { mode: 'pool', pool: { pc: [], md: [], g: [] }, tab: 'pc', meals: slotsFor(n).map(function (s) { return { slot: s[1], type: s[0], name: '', note: '', items: [] }; }), foods: {}, locked: true };
   }
   function draftFrom(row) {
-    return { meals: JSON.parse(JSON.stringify(row.meals)).map(function (m) { m.items = m.items || []; m.name = m.name || ''; m.note = m.note || ''; return m; }), foods: JSON.parse(JSON.stringify(row.foods || {})), locked: row.locked !== false };
+    var pool = JSON.parse(JSON.stringify(row.pool || {}));
+    ['pc', 'md', 'g'].forEach(function (k) { pool[k] = pool[k] || []; });
+    return { mode: row.mode === 'pool' ? 'pool' : 'meals', pool: pool, tab: 'pc', meals: JSON.parse(JSON.stringify(row.meals)).map(function (m) { m.items = m.items || []; m.name = m.name || ''; m.note = m.note || ''; return m; }), foods: JSON.parse(JSON.stringify(row.foods || {})), locked: row.locked !== false };
   }
   function setMealCount(n) {
     var old = E.draft.meals, sl = slotsFor(n);
@@ -112,13 +116,99 @@
       '</div>';
   }
 
+  // ---------- „Aleg alimentele”: liste de alimente permise, mesele le face programul ----------
+  var TABS = [['pc', 'Prânz și cină'], ['md', 'Mic dejun'], ['g', 'Gustări']];
+  var TEMPLATES = [
+    ['clasic', 'Clasic sală', {
+      pc: 'piept_pui piept_curcan vita_slaba somon ton_apa orez_basmati cartofi cartofi_dulci paste_int broccoli salata rosii castravete ardei ulei_masline',
+      md: 'ou albus iaurt_gr ovaz paine_int banana fructe_padure rosii unt_arahide',
+      g: 'iaurt_gr skyr branza_vaci mar banana migdale' }],
+    ['veg', 'Vegetarian', {
+      pc: 'tofu tempeh linte_fiarta ou quinoa orez_brun bulgur cartofi_dulci broccoli spanac ardei rosii ulei_masline avocado',
+      md: 'ou iaurt_gr skyr ovaz paine_int banana fructe_padure unt_arahide',
+      g: 'iaurt_gr branza_vaci mar capsuni nuci' }],
+    ['fl', 'Fără lactoză', {
+      pc: 'piept_pui piept_curcan vita_slaba somon cod orez_basmati cartofi quinoa paste_int broccoli fasole_verde salata rosii ulei_masline',
+      md: 'ou albus ovaz lapte_fl iaurt_gr_fl paine_int banana fructe_padure migdale',
+      g: 'iaurt_gr_fl mar banana unt_arahide nuci' }]
+  ];
+  function tabsFor(d) { var types = {}; d.meals.forEach(function (m) { types[m.type] = 1; }); return TABS.filter(function (t) { return types[t[0]]; }); }
+  function draftMenu(d) {
+    var pool = {}; ['pc', 'md', 'g'].forEach(function (k) { pool[k] = (d.pool[k] || []).filter(function (id) { return foodOf(id); }); });
+    return { mode: 'pool', pool: pool, foods: d.foods, meals: d.meals.map(function (m) { return { slot: m.slot, type: m.type, items: [] }; }) };
+  }
+  function chipsHtml(ids, foods, del) {
+    var groups = {};
+    ids.forEach(function (id) { var x = foods[id]; if (x) (groups[G.poolKind(x)] = groups[G.poolKind(x)] || []).push(x); });
+    var h = G.POOL_KINDS.filter(function (k) { return groups[k[0]]; }).map(function (k) {
+      return '<div class="me-pgroup"><span class="me-plabel">' + k[1] + '</span>' + groups[k[0]].map(function (x) {
+        return '<span class="me-chip">' + esc(fname(x)) + (del ? '<button type="button" data-pdel="' + esc(x.id) + '" aria-label="Scoate ' + esc(fname(x)) + '">×</button>' : '') + '</span>';
+      }).join('') + '</div>';
+    }).join('');
+    return h || '<p class="muted small" style="margin:6px 0">Niciun aliment ales încă.</p>';
+  }
+  function poolResultsHtml() {
+    var q0 = (E.search.pool || '').trim(); if (q0.length < 2) return '';
+    var list = E.draft.pool[E.draft.tab], own = Object.keys(E.draft.foods).map(function (k) { return E.draft.foods[k]; });
+    var norm = function (x) { return x.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
+    var res = own.filter(function (x) { return norm(x.name).indexOf(norm(q0)) >= 0; }).concat(G.searchFoods(E.content, q0, 10)).filter(function (x) { return list.indexOf(x.id) < 0; }).slice(0, 8);
+    if (!res.length) return '<p class="muted small" style="margin:6px 0">Nu am găsit „' + esc(q0) + '” (sau e deja în listă). Îl poți adăuga ca aliment propriu.</p>';
+    return res.map(function (x) { return '<button type="button" class="me-res" data-padd="' + esc(x.id) + '"><span>' + esc(fname(x)) + '</span><small>' + R(x.kcal) + ' kcal · ' + R(x.p) + ' P · ' + R(x.c) + ' C · ' + R(x.f) + ' G la 100 g</small></button>'; }).join('');
+  }
+  function previewHtml(menu, seed) {
+    var plan;
+    try { plan = G.menuPlan(E.content, menu, T(), { seed: seed }); } catch (err) { return ''; }
+    var h = (plan.warnings || []).map(function (w) { return '<p class="msg msg-warn">' + esc(w) + '</p>'; }).join('');
+    h += plan.days.map(function (d, di) {
+      return '<details class="me-pday"' + (di === 0 ? ' open' : '') + '><summary><b>Ziua ' + (di + 1) + '</b><span class="muted">' + R(d.totals.kcal) + ' kcal · ' + R(d.totals.p) + ' P · ' + R(d.totals.c) + ' C · ' + R(d.totals.f) + ' G</span></summary>' +
+        d.meals.map(function (m) {
+          return '<div class="me-pmeal"><div class="mp-slot">' + esc(m.slot) + ' · ' + R(m.macros.kcal) + ' kcal</div><div class="small">' + esc(m.name) + '</div><div class="muted small">' +
+            m.items.map(function (i) { return esc(i.name.replace(/ \(.*?\)$/, '')) + ' ' + (i.label ? esc(i.label) : i.g + ' g'); }).join(' · ') + '</div></div>';
+        }).join('') + '</details>';
+    }).join('');
+    return h;
+  }
+  function poolEditHtml() {
+    var d = E.draft, tabs = tabsFor(d);
+    if (!tabs.some(function (t) { return t[0] === d.tab; })) d.tab = 'pc';
+    var list = d.pool[d.tab], allFoods = Object.assign({}, E.food, d.foods);
+    var h = '<p class="muted small">Alegi doar alimentele permise. Programul face singur mesele pentru fiecare zi, variate, numai din alimentele astea, cu gramajele potrivite pe caloriile și macro-urile clientului.</p>' +
+      '<div class="field"><label>Pornește de la un șablon <span class="muted">(apoi scoți sau adaugi ce vrei)</span></label><div class="seg">' + TEMPLATES.map(function (t) { return '<button type="button" data-tpl="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div></div>' +
+      '<div class="me-tabs" role="tablist">' + tabs.map(function (t) {
+        var n = (d.pool[t[0]] || []).length;
+        return '<button type="button" role="tab" aria-selected="' + (d.tab === t[0]) + '" class="' + (d.tab === t[0] ? 'on' : '') + '" data-ptab="' + t[0] + '">' + t[1] + ' <span class="muted">' + (n || (t[0] === 'pc' ? 0 : '=')) + '</span></button>';
+      }).join('') + '</div><div class="me-pool">';
+    if (d.tab !== 'pc' && !list.length) h += '<p class="small" style="margin:0 0 8px">Lista e goală, așa că la ' + (d.tab === 'md' ? 'micul dejun' : 'gustări') + ' se folosesc alimentele ' + (d.tab === 'g' && d.pool.md.length ? 'de la micul dejun' : 'de la prânz și cină') + '. <button type="button" class="linkbtn small" data-pcopy="1">Copiază-le aici ca să le modifici</button></p>';
+    h += chipsHtml(list, allFoods, true) +
+      '<div class="field" style="margin:10px 0 6px"><input type="search" class="me-q" data-pq="1" autocomplete="off" placeholder="+ Adaugă aliment (ex. orez, pui, iaurt)" value="' + esc(E.search.pool || '') + '"></div>' +
+      '<div id="mePRes">' + poolResultsHtml() + '</div>' +
+      (E.ownFor === 'p' ? ownFormHtml('p') : '<button type="button" class="linkbtn small" data-own="p">+ Aliment care nu e în listă</button>') + '</div>';
+    h += '<h3 style="margin:18px 0 4px">Exemplu de săptămână</h3><p class="muted small" style="margin:0 0 8px">Așa arată mesele pe ' + E.targets.kcal + ' kcal. Clientul primește în fiecare săptămână altă combinație, din aceleași alimente.</p>' +
+      '<div id="mePrev">' + (d.pool.pc.length ? previewHtml(draftMenu(d), 'preview#' + (E.pv || 0)) : '<p class="muted small">Alege întâi alimentele pentru prânz și cină.</p>') + '</div>' +
+      (d.pool.pc.length ? '<div class="row" style="margin:6px 0 14px"><button type="button" class="btn btn-ghost btn-sm" data-me="pv">Arată altă variantă</button></div>' : '');
+    return h;
+  }
+
   function viewHtml() {
     var row = E.row;
     var h = '<h2>Meniul clientului</h2>';
     if (!E.targets) return h + '<p class="muted small" style="margin:0">Setează întâi caloriile clientului (mai sus). Apoi îi poți face tu meniul, dacă vrei.</p>';
     if (!row) {
-      return h + '<p class="muted small">Acum ' + esc(E.client.full_name.split(/\s+/)[0]) + ' primește meniul automat, din rețete. Dacă vrei, îi faci tu meniul: alegi alimentele pentru fiecare masă, iar gramajele se potrivesc la caloriile lui. Meniul tău se repetă în fiecare zi.</p>' +
-        '<button type="button" class="btn btn-ghost" data-me="start">Fac eu meniul</button>';
+      return h + '<p class="muted small">Acum ' + esc(E.client.full_name.split(/\s+/)[0]) + ' primește meniul automat, din rețete. Dacă vrei, îi faci tu meniul, în unul din două feluri:</p>' +
+        '<div class="me-modes"><button type="button" class="me-mode" data-me="startpool"><b>Aleg alimentele</b><span>Tu alegi ce are voie să mănânce. Programul face singur mese diferite în fiecare zi, cu gramajele potrivite.</span></button>' +
+        '<button type="button" class="me-mode" data-me="start"><b>Fac eu fiecare masă</b><span>Compui tu mesele unei zile, cu alimente și gramaje. Ziua se repetă toată săptămâna.</span></button></div>';
+    }
+    if (row.mode === 'pool') {
+      var pf = G.menuFood(E.content, row), tabs = tabsFor({ meals: row.meals });
+      h += '<p class="pill pill-ok" style="margin:0 0 12px">Mese făcute automat din alimentele alese de tine, diferite în fiecare zi · ' + (row.locked ? 'clientul nu poate schimba alimente' : 'clientul poate înlocui alimente și mese') + '</p>';
+      h += tabs.map(function (t) {
+        var ids = (row.pool && row.pool[t[0]]) || [];
+        return '<div class="me-sum"><div class="mp-slot">' + t[1] + '</div>' + (ids.length ? chipsHtml(ids, pf, false) : '<p class="muted small" style="margin:4px 0">Aceleași alimente ca la ' + (t[0] === 'g' && row.pool && row.pool.md && row.pool.md.length ? 'micul dejun' : 'prânz și cină') + '.</p>') + '</div>';
+      }).join('');
+      h += '<details class="me-note"><summary>Vezi un exemplu de săptămână</summary>' + previewHtml(row, 'view') + '</details>';
+      h += '<p id="meMsg" class="msg" hidden></p><div class="row" style="margin-top:12px"><button type="button" class="btn btn-ghost btn-sm" data-me="edit">Modifică alimentele</button>' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-me="' + (E.confirmDel ? 'delyes' : 'del') + '">' + (E.confirmDel ? 'Sigur? Apasă din nou' : 'Revin la meniul automat') + '</button></div>';
+      return h;
     }
     var mt = row.targets, stale = mt && (mt.kcal !== E.targets.kcal || mt.p !== E.targets.p || mt.c !== E.targets.c || mt.f !== E.targets.f);
     h += '<p class="pill pill-ok" style="margin:0 0 12px">Clientul urmează meniul tău, în fiecare zi · ' + (row.locked ? 'nu poate schimba alimente' : 'poate înlocui alimente și mese') + '</p>';
@@ -135,13 +225,15 @@
   }
 
   function editHtml() {
-    var d = E.draft;
+    var d = E.draft, pool = d.mode === 'pool';
     return '<h2>' + (E.row ? 'Modifică meniul' : 'Fă meniul clientului') + '</h2>' +
-      '<p class="muted small">Alege alimentele pentru fiecare masă și scrie gramajele, sau apasă „Potrivește gramajele” ca să ajungă la ținta mesei. Ziua asta se repetă toată săptămâna.</p>' +
+      '<div class="field"><label>Cum faci meniul</label><div class="seg" data-memode="1">' + [['pool', 'Aleg alimentele'], ['meals', 'Fac eu fiecare masă']].map(function (o) { return '<button type="button" data-v="' + o[0] + '" class="' + (d.mode === o[0] ? 'on' : '') + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
       '<div class="field"><label>Mese pe zi</label><div class="seg" data-meseg="n">' + [[3, '3 mese'], [4, '3 mese + gustare'], [5, '3 mese + 2 gustări']].map(function (o) { return '<button type="button" data-v="' + o[0] + '" class="' + (d.meals.length === o[0] ? 'on' : '') + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
+      (pool ? poolEditHtml() :
+      '<p class="muted small">Alege alimentele pentru fiecare masă și scrie gramajele, sau apasă „Potrivește gramajele” ca să ajungă la ținta mesei. Ziua asta se repetă toată săptămâna.</p>' +
       d.meals.map(mealHtml).join('') +
       '<h3 style="margin:18px 0 6px">Total pe zi</h3><div id="meDay">' + dayHtml() + '</div>' +
-      '<div class="row" style="margin:-4px 0 14px"><button type="button" class="btn btn-ghost btn-sm" data-me="fitall">Potrivește toate mesele</button></div>' +
+      '<div class="row" style="margin:-4px 0 14px"><button type="button" class="btn btn-ghost btn-sm" data-me="fitall">Potrivește toate mesele</button></div>') +
       '<label class="check" style="margin:0 0 14px"><input type="checkbox" id="meFree"' + (d.locked ? '' : ' checked') + '><span>Clientul poate înlocui alimente și schimba mesele <span class="muted">(dacă nu bifezi, vede meniul exact cum l-ai făcut și doar bifează ce a mâncat)</span></span></label>' +
       '<p id="meMsg" class="msg" hidden></p>' +
       '<button type="button" class="btn btn-block" data-me="save">Salvează meniul</button>' +
@@ -159,17 +251,29 @@
 
   // ---------- acțiuni ----------
   async function save(btn) {
-    var d = E.draft;
-    var empty = d.meals.filter(function (m) { return !m.items.length; }).map(function (m) { return m.slot; });
-    if (empty.length) return msg('Adaugă cel puțin un aliment la: ' + empty.join(', ') + '.');
-    var bad = d.meals.some(function (m) { return m.items.some(function (i) { return !(+i.g >= 1 && +i.g <= 3000); }); });
-    if (bad) return msg('Gramajele trebuie să fie între 1 și 3000.');
-    var used = {};
-    d.meals.forEach(function (m) { m.items.forEach(function (i) { if (d.foods[i.id]) used[i.id] = d.foods[i.id]; }); });
-    var row = {
-      client_id: E.client.id, set_by: E.me.id, updated_at: new Date().toISOString(), locked: d.locked, targets: T(), foods: used,
-      meals: d.meals.map(function (m) { var o = { slot: m.slot, type: m.type, items: m.items.map(function (i) { return { id: i.id, g: R(+i.g) }; }) }; if (m.name.trim()) o.name = m.name.trim(); if (m.note.trim()) o.note = m.note.trim(); return o; })
-    };
+    var d = E.draft, row, used = {};
+    if (d.mode === 'pool') {
+      var dm = draftMenu(d), types = {};
+      d.meals.forEach(function (m) { types[m.type] = 1; });
+      if (!types.md) dm.pool.md = []; if (!types.g) dm.pool.g = [];
+      var kinds = {}; dm.pool.pc.forEach(function (id) { kinds[G.poolKind(foodOf(id))] = 1; });
+      if (dm.pool.pc.length < 3) return msg('Alege cel puțin 3 alimente pentru prânz și cină (o proteină, un carbohidrat și o legumă, de exemplu).');
+      if (!kinds.prot) return msg('Adaugă la prânz și cină cel puțin o sursă de proteine (carne, pește, ouă, tofu, brânză slabă).');
+      if (!kinds.carb && !kinds.fruit) return msg('Adaugă la prânz și cină cel puțin un carbohidrat (orez, cartofi, paste, pâine).');
+      ['pc', 'md', 'g'].forEach(function (k) { dm.pool[k].forEach(function (id) { if (d.foods[id]) used[id] = d.foods[id]; }); });
+      row = { client_id: E.client.id, set_by: E.me.id, updated_at: new Date().toISOString(), locked: d.locked, targets: T(), foods: used,
+        mode: 'pool', pool: dm.pool, meals: d.meals.map(function (m) { return { slot: m.slot, type: m.type, items: [] }; }) };
+    } else {
+      var empty = d.meals.filter(function (m) { return !m.items.length; }).map(function (m) { return m.slot; });
+      if (empty.length) return msg('Adaugă cel puțin un aliment la: ' + empty.join(', ') + '.');
+      var bad = d.meals.some(function (m) { return m.items.some(function (i) { return !(+i.g >= 1 && +i.g <= 3000); }); });
+      if (bad) return msg('Gramajele trebuie să fie între 1 și 3000.');
+      d.meals.forEach(function (m) { m.items.forEach(function (i) { if (d.foods[i.id]) used[i.id] = d.foods[i.id]; }); });
+      row = {
+        client_id: E.client.id, set_by: E.me.id, updated_at: new Date().toISOString(), locked: d.locked, targets: T(), foods: used, mode: 'meals',
+        meals: d.meals.map(function (m) { var o = { slot: m.slot, type: m.type, items: m.items.map(function (i) { return { id: i.id, g: R(+i.g) }; }) }; if (m.name.trim()) o.name = m.name.trim(); if (m.note.trim()) o.note = m.note.trim(); return o; })
+      };
+    }
     btn.disabled = true;
     var r = await sb.from('client_menus').upsert(row, { onConflict: 'client_id' }).select('*').single();
     btn.disabled = false;
@@ -194,11 +298,13 @@
       if (b) {
         var a = b.getAttribute('data-me');
         if (a !== 'delyes') E.confirmDel = false;
-        if (a === 'start' || a === 'edit') {
+        if (a === 'start' || a === 'startpool' || a === 'edit') {
           b.disabled = true;
           try { await ensureContent(); } catch (err) { b.disabled = false; return App.msg(el('meMsg') || document.createElement('p'), App.ro(err)); }
-          E.draft = E.row ? draftFrom(E.row) : newDraft(); E.editing = true; E.search = {}; E.ownFor = null; render(); return;
+          E.draft = E.row ? draftFrom(E.row) : newDraft(); if (a === 'start') E.draft.mode = 'meals';
+          E.editing = true; E.search = {}; E.ownFor = null; E.pv = 0; render(); return;
         }
+        if (a === 'pv') { E.pv = (E.pv || 0) + 1; var pv = el('mePrev'); if (pv) pv.innerHTML = previewHtml(draftMenu(E.draft), 'preview#' + E.pv); return; }
         if (a === 'cancel') { E.editing = false; E.draft = null; return render(); }
         if (a === 'fitall') { E.draft.meals.forEach(function (m, mi) { fitMeal(mi); }); return render(); }
         if (a === 'save') return save(b);
@@ -207,6 +313,28 @@
       }
       var sg = t.closest('[data-meseg] button');
       if (sg) { setMealCount(+sg.getAttribute('data-v')); E.search = {}; return render(); }
+      var md = t.closest('[data-memode] button');
+      if (md) { E.draft.mode = md.getAttribute('data-v'); E.search = {}; E.ownFor = null; return render(); }
+      var tb = t.closest('[data-ptab]');
+      if (tb) { E.draft.tab = tb.getAttribute('data-ptab'); E.search.pool = ''; E.ownFor = null; return render(); }
+      var tp = t.closest('[data-tpl]');
+      if (tp) {
+        var tpl = TEMPLATES.filter(function (x) { return x[0] === tp.getAttribute('data-tpl'); })[0];
+        ['pc', 'md', 'g'].forEach(function (k) { E.draft.pool[k] = tpl[2][k].split(' ').filter(function (id) { return E.food[id]; }); });
+        return render();
+      }
+      var pc = t.closest('[data-pcopy]');
+      if (pc) { var src = E.draft.tab === 'g' && E.draft.pool.md.length ? 'md' : 'pc'; E.draft.pool[E.draft.tab] = E.draft.pool[src].slice(); return render(); }
+      var pa = t.closest('[data-padd]');
+      if (pa) {
+        var pid = pa.getAttribute('data-padd'), lst = E.draft.pool[E.draft.tab];
+        if (foodOf(pid) && lst.indexOf(pid) < 0 && lst.length < 120) lst.push(pid);
+        E.search.pool = ''; render();
+        var pq = root.querySelector('[data-pq]'); if (pq) pq.focus();
+        return;
+      }
+      var pd = t.closest('[data-pdel]');
+      if (pd) { var l2 = E.draft.pool[E.draft.tab], ix = l2.indexOf(pd.getAttribute('data-pdel')); if (ix >= 0) l2.splice(ix, 1); return render(); }
       var ad = t.closest('[data-add]');
       if (ad) {
         var p = ad.getAttribute('data-add'), mi = +p.split(':')[0], id = p.slice(p.indexOf(':') + 1), x = foodOf(id);
@@ -223,22 +351,23 @@
       var ft = t.closest('[data-fit]');
       if (ft) { fitMeal(+ft.getAttribute('data-fit')); return render(); }
       var ow = t.closest('[data-own]');
-      if (ow) { var v = ow.getAttribute('data-own'); E.ownFor = v === '' ? null : +v; render(); var n = el('meOwnN'); if (n) n.focus(); return; }
+      if (ow) { var v = ow.getAttribute('data-own'); E.ownFor = v === '' ? null : v === 'p' ? 'p' : +v; render(); var n = el('meOwnN'); if (n) n.focus(); return; }
       var oa = t.closest('[data-ownadd]');
       if (oa) {
-        var omi = +oa.getAttribute('data-ownadd'), name = (el('meOwnN').value || '').trim();
+        var omi = oa.getAttribute('data-ownadd'), name = (el('meOwnN').value || '').trim();
         var vk = num(el('meOwnk').value), vp = num(el('meOwnp').value) || 0, vc = num(el('meOwnc').value) || 0, vf = num(el('meOwnf').value) || 0;
         if (!name) return App.msg(el('meOwnMsg'), 'Scrie numele alimentului.');
         if (vk == null) vk = R(vp * 4 + vc * 4 + vf * 9);
         if (!(vk > 0 && vk <= 900) || vp + vc + vf > 100) return App.msg(el('meOwnMsg'), 'Verifică valorile: la 100 g, caloriile sunt între 1 și 900, iar proteinele, carbohidrații și grăsimile adunate nu trec de 100 g.');
         var oid = 'own_' + Date.now().toString(36);
         E.draft.foods[oid] = { id: oid, name: name, cat: OWN_CAT, kcal: vk, p: vp, c: vc, f: vf, fib: 0 };
-        E.draft.meals[omi].items.push({ id: oid, g: 100 });
+        if (omi === 'p') E.draft.pool[E.draft.tab].push(oid); else E.draft.meals[+omi].items.push({ id: oid, g: 100 });
         E.ownFor = null; return render();
       }
     };
     root.oninput = function (e) {
       var t = e.target;
+      if (t.hasAttribute('data-pq')) { E.search.pool = t.value; var pr2 = el('mePRes'); if (pr2) pr2.innerHTML = poolResultsHtml(); return; }
       if (t.hasAttribute('data-q')) { var mi = +t.getAttribute('data-q'); E.search[mi] = { q: t.value }; var r = el('meRes_' + mi); if (r) r.innerHTML = resultsHtml(mi); return; }
       if (t.hasAttribute('data-g')) {
         var p = t.getAttribute('data-g').split(':').map(Number), it = E.draft.meals[p[0]].items[p[1]];
@@ -253,6 +382,7 @@
     root.onkeydown = function (e) {
       if (e.key !== 'Enter') return;
       var t = e.target;
+      if (t.hasAttribute('data-pq')) { e.preventDefault(); var f1 = el('mePRes').querySelector('[data-padd]'); if (f1) f1.click(); return; }
       if (t.hasAttribute('data-q')) { e.preventDefault(); var first = el('meRes_' + t.getAttribute('data-q')).querySelector('[data-add]'); if (first) first.click(); }
       if (t.id && t.id.indexOf('meOwn') === 0) { e.preventDefault(); var ab = E.root.querySelector('[data-ownadd]'); if (ab) ab.click(); }
     };
@@ -267,7 +397,7 @@
     if (E.row) { try { await ensureContent(); } catch (err) { /* afișăm fără alimente */ E.content = { foods: [], recipes: [] }; } }
     bind(); render();
   }
-  function setTargets(t) { if (!E) return; E.targets = t; if (!E.editing) render(); else { E.draft.meals.forEach(function (m, mi) { refreshTotals(mi); }); } }
+  function setTargets(t) { if (!E) return; E.targets = t; if (!E.editing || E.draft.mode === 'pool') render(); else { E.draft.meals.forEach(function (m, mi) { refreshTotals(mi); }); } }
 
   window.MenuEditor = { mount: mount, setTargets: setTargets };
 })();

@@ -223,6 +223,28 @@ textarea { width: 100%; padding: 12px 14px; font: inherit; color: inherit; borde
 .me-sum ul { list-style: none; margin: 4px 0; padding: 0; font-size: .92rem; }
 .me-sum li { display: flex; justify-content: space-between; gap: 10px; padding: 2px 0; }
 .me-sum li span:last-child { color: var(--muted); white-space: nowrap; }
+/* meniul din alimentele alese */
+.me-modes { display: grid; gap: 10px; }
+.me-mode { display: flex; flex-direction: column; gap: 4px; text-align: left; border: 1px solid var(--line); background: #fff; border-radius: 12px; padding: 14px 16px; font: inherit; color: var(--ink); cursor: pointer; }
+.me-mode:hover { border-color: var(--accent); }
+.me-mode b { font-size: 1rem; }
+.me-mode span { color: var(--muted); font-size: .88rem; line-height: 1.45; }
+.me-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: 4px 0 0; overflow-x: auto; }
+.me-tabs button { border: 0; background: none; font: inherit; font-size: .92rem; padding: 9px 12px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+.me-tabs button.on { color: var(--ink); font-weight: 600; border-bottom-color: var(--accent); }
+.me-tabs button .muted { font-weight: 400; font-size: .8rem; }
+.me-pool { padding: 12px 0 4px; }
+.me-pgroup { margin: 0 0 10px; }
+.me-plabel { display: block; font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 5px; }
+.me-chip { display: inline-flex; align-items: center; gap: 2px; background: var(--accent-soft); border-radius: 99px; padding: 5px 6px 5px 12px; margin: 0 6px 6px 0; font-size: .88rem; }
+.me-sum .me-chip { padding-right: 12px; }
+.me-chip button { border: 0; background: none; font-size: 1.1rem; line-height: 1; color: var(--muted); cursor: pointer; padding: 0 5px; }
+.me-chip button:hover { color: var(--danger); }
+.me-pday { border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; margin: 0 0 8px; }
+.me-pday summary { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 10px 0; cursor: pointer; font-size: .92rem; }
+.me-pday summary .muted { font-size: .82rem; }
+.me-pmeal { border-top: 1px solid var(--line); padding: 8px 0; }
+.me-pmeal .small { line-height: 1.45; }
 
 /* ---- chat ---- */
 .chat-list { max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 4px 2px 8px; }
