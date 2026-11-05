@@ -52,7 +52,7 @@
     var cur = paid(b) ? b.plan : null, ready = !!(links().start && links().start.month);
     return '<div class="tabs" data-bill-per style="max-width:340px;margin:0 auto 4px">' +
       '<button type="button" data-per="month" class="' + (period === 'month' ? 'on' : '') + '">Lunar</button>' +
-      '<button type="button" data-per="year" class="' + (period === 'year' ? 'on' : '') + '">Anual · 2 luni gratuite</button></div>' +
+      '<button type="button" data-per="year" class="' + (period === 'year' ? 'on' : '') + '">Anual · −17%</button></div>' +
       '<div class="plans">' + PLANS.map(function (p) {
         var price = period === 'month' ? p.month : p.year, url = payUrl(p.id, period, me, email);
         var btn;
@@ -76,7 +76,7 @@
     if (!mail) return '';
     var body = 'Bună,\n\nAș vrea o ofertă pentru peste 50 de clienți.\n\nNume: ' + (me.display_name || '') + '\nEmail cont: ' + (email || '') +
       '\nClienți activi acum: ' + b.used + '\nCâți clienți estimez: \nTelefon: \n\nMulțumesc!';
-    var href = 'mailto:' + mail + '?subject=' + encodeURIComponent('Ofertă COS FIT Pro – peste 50 de clienți') + '&body=' + encodeURIComponent(body);
+    var href = 'mailto:' + mail + '?subject=' + encodeURIComponent('Ofertă CoachMeal – peste 50 de clienți') + '&body=' + encodeURIComponent(body);
     return '<div class="plan custom"><h3>Peste 50</h3><div class="price">La cerere</div>' +
       '<div class="small muted">pentru <b style="color:#fff">peste 50 de clienți activi</b></div>' +
       '<ul><li>Tot ce e în celelalte planuri</li><li>Preț pe client mai mic</li><li>Plată lunară sau anuală</li></ul>' +

@@ -22,6 +22,7 @@ body {
 }
 [hidden] { display: none !important; }
 a { color: var(--accent); }
+h1, h2, .display { font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; }
 h1 { font-size: 1.6rem; line-height: 1.2; margin: 0 0 .4rem; letter-spacing: -.01em; }
 h2 { font-size: 1.1rem; margin: 0 0 .75rem; }
 p { margin: 0 0 1rem; }
@@ -267,3 +268,15 @@ textarea { width: 100%; padding: 12px 14px; font: inherit; color: inherit; borde
 .plan.custom { background: #141414; color: #fff; border-color: #141414; }
 .plan.custom .muted, .plan.custom .price small { color: #bdbab3; }
 .plan.custom .btn, .plan.custom .btn-ghost { background: #fff; color: #141414; border-color: #fff; }
+
+/* marca CoachMeal: „coach” gros, „meal” subțire, „o” e o farfurie */
+.pt-brand { display: inline-block; color: var(--ink); text-decoration: none; font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; font-size: 1.45rem; letter-spacing: -.04em; line-height: 1; white-space: nowrap; }
+.pt-brand b { font-weight: 800; }
+.pt-brand span { font-weight: 500; }
+.pt-brand .pt-o { width: .6em; height: .6em; vertical-align: -.03em; margin: 0 .01em; }
+.pt-brand.lg { font-size: 2.1rem; }
+.pt-powered { display: flex; justify-content: center; align-items: center; gap: 6px; font-size: .78rem; color: var(--muted); text-decoration: none; margin: 18px 0 8px; }
+.pt-powered svg { width: 14px; height: 14px; }
+.plans { padding-top: 12px; }
+.plan { position: relative; }
+.plan .plan-tag { position: absolute; top: -11px; left: 16px; }
