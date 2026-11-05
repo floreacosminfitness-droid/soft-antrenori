@@ -8,7 +8,7 @@
 <link rel="icon" href="assets/icons/coachmeal.svg" type="image/svg+xml">
 <link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest-client.webmanifest">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-title" content="CoachMeal">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -54,11 +54,11 @@
   if (!App.configured) return App.notConfigured();
   var $ = App.$, sb = App.sb, esc = App.esc;
 
-  $('logout').onclick = async function () { await sb.auth.signOut(); location.replace('index.html'); };
+  $('logout').onclick = async function () { await sb.auth.signOut(); location.replace('intra.html'); };
 
   try {
     var acc = await App.account();
-    if (!acc) return location.replace('index.html');
+    if (!acc) return location.replace('intra.html');
     if (acc.role === 'trainer') return location.replace('antrenor.html');
     if (acc.role !== 'client') { await sb.auth.signOut(); return location.replace('index.html'); }
 

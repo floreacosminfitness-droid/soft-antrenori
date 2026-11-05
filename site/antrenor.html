@@ -83,7 +83,8 @@
         <span class="small muted">Cod: <span class="code" id="invCode"></span></span>
       </div>
       <p id="invMsg" class="msg" hidden style="margin-top:12px"></p>
-      <p class="small muted" style="margin:12px 0 0">Link-ul a ajuns la cine nu trebuie? <button class="linkbtn" id="regen" type="button">Generează un link nou</button>. Cel vechi nu mai funcționează; clienții deja înscriși rămân.</p>
+      <p class="small muted" style="margin:12px 0 0">După înscriere, clienții intră în cont de aici: <b id="cliLogin"></b>. Pagina lor nu arată prețurile și nimic despre abonamentul tău.</p>
+      <p class="small muted" style="margin:8px 0 0">Link-ul a ajuns la cine nu trebuie? <button class="linkbtn" id="regen" type="button">Generează un link nou</button>. Cel vechi nu mai funcționează; clienții deja înscriși rămân.</p>
     </section>
 
     <section class="card">
@@ -153,7 +154,8 @@
     $('tbName').textContent = me.display_name;
     $('invLink').textContent = inviteUrl();
     $('invCode').textContent = me.invite_code;
-    var text = 'Salut! Îți fac contul pentru planul alimentar. Intră aici, completează datele și primești planul imediat: ' + inviteUrl();
+    $('cliLogin').textContent = App.base().replace(/^https?:\/\//, '') + 'intra';
+    var text = 'Salut! Îți fac contul pentru planul alimentar. Intră aici, completează datele și primești planul imediat: ' + inviteUrl() + ' . Data viitoare intri în cont de aici: ' + App.base() + 'intra';
     $('waLink').href = 'https://wa.me/?text=' + encodeURIComponent(text);
     $('prName').value = me.display_name;
     $('prLogo').innerHTML = logoHtml(me.logo_url, me.display_name, true);

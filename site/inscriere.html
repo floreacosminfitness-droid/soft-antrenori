@@ -8,7 +8,7 @@
 <link rel="icon" href="assets/icons/coachmeal.svg" type="image/svg+xml">
 <link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest-client.webmanifest">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-title" content="CoachMeal">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,7 +25,7 @@
   <section id="vBad" class="card center" hidden>
     <h1>Link-ul nu mai e valabil</h1>
     <p>Cere-i antrenorului tău link-ul de înscriere actual.</p>
-    <p class="small muted">Ai deja cont? <a href="index.html">Intră în cont</a></p>
+    <p class="small muted">Ai deja cont? <a href="intra.html">Intră în cont</a></p>
   </section>
 
   <section id="vForm" class="card" hidden>
@@ -45,7 +45,7 @@
       </div>
       <button class="btn btn-block" type="submit">Creează contul</button>
     </form>
-    <p class="small muted center" style="margin:14px 0 0">Ai deja cont? <a href="index.html">Intră în cont</a></p>
+    <p class="small muted center" style="margin:14px 0 0">Ai deja cont? <a href="intra.html">Intră în cont</a></p>
   </section>
 
   <section id="vCheckEmail" class="card center" hidden>
@@ -78,7 +78,7 @@
     var t = r.data[0];
     if (t.accepting === false) {
       $('vBad').querySelector('h1').textContent = t.display_name + ' nu poate primi clienți noi acum';
-      $('vBad').querySelector('p').textContent = 'Contul antrenorului tău e plin sau abonamentul lui trebuie reînnoit. Anunță-l și încearcă din nou cu același link puțin mai târziu.';
+      $('vBad').querySelector('p').textContent = 'Momentan nu se pot face înscrieri noi. Anunță-l pe antrenorul tău și încearcă din nou cu același link puțin mai târziu.';
       return view('vBad');
     }
     document.title = 'Înscriere · ' + t.display_name;
