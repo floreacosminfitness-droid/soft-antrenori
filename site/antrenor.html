@@ -3,8 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cont de antrenor</title>
+<title>Cont de antrenor · CoachMeal</title>
 <meta name="robots" content="noindex">
+<link rel="icon" href="assets/icons/coachmeal.svg" type="image/svg+xml">
+<link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-title" content="CoachMeal">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&display=swap">
 <link rel="stylesheet" href="assets/app.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/config.js"></script>
@@ -21,9 +29,10 @@
 
 <!-- ============ ÎNREGISTRARE ANTRENOR ============ -->
 <main id="vSignup" class="wrap narrow" hidden>
+  <p class="center" style="margin:28px 0 18px"><a class="pt-brand lg" href="preturi.html" aria-label="CoachMeal"><b>c<svg class="pt-o" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="currentColor"/><circle cx="32" cy="32" r="17" fill="none" stroke="#F6F5F2" stroke-width="5"/></svg>ach</b><span>meal</span></a></p>
   <div class="card">
     <h1>Creează cont de antrenor</h1>
-    <p class="muted">Clienții tăi primesc automat planul alimentar, iar tu îi urmărești pe toți dintr-un singur loc. <b>14 zile gratuit, fără card.</b> <a href="preturi.html">Vezi prețurile</a></p>
+    <p class="muted">Clienții tăi primesc automat planul alimentar, iar tu îi urmărești pe toți dintr-un singur loc. <b>7 zile gratuit, fără card.</b> <a href="preturi.html">Vezi prețurile</a></p>
     <p id="suMsg" class="msg" hidden></p>
     <form id="fSignup" novalidate>
       <div class="field"><label for="suName">Numele afișat clienților</label><input id="suName" type="text" maxlength="80" placeholder="de exemplu Andrei Ionescu Coaching" required></div>
@@ -36,6 +45,7 @@
 </main>
 
 <main id="vCheckEmail" class="wrap narrow" hidden>
+  <p class="center" style="margin:28px 0 18px"><a class="pt-brand lg" href="preturi.html" aria-label="CoachMeal"><b>c<svg class="pt-o" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="currentColor"/><circle cx="32" cy="32" r="17" fill="none" stroke="#F6F5F2" stroke-width="5"/></svg>ach</b><span>meal</span></a></p>
   <div class="card center">
     <h1>Verifică emailul</h1>
     <p>Ți-am trimis un link de confirmare la <b id="ceEmail"></b>. Apasă pe el și ajungi direct în contul tău.</p>
