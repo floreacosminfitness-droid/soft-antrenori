@@ -16,94 +16,182 @@
 <link rel="stylesheet" href="assets/app.css">
 <script src="assets/config.js"></script>
 <style>
-  .wrap { max-width: 1040px; }
-  .hero { text-align: center; padding: 36px 0 8px; }
-  .hero h1 { font-size: clamp(1.8rem, 5.4vw, 2.8rem); line-height: 1.1; letter-spacing: -.02em; margin: 0 0 14px; }
-  .hero p.lead { color: var(--muted); max-width: 580px; margin: 0 auto 22px; font-size: 1.08rem; }
-  .hero .btn { padding: 14px 24px; }
-  .eyebrow { display: inline-block; font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  /* ---------- pagina de prețuri: tipografie mare, multă respirație, o singură mișcare (linia pașilor) ---------- */
+  body.lp { background: #F6F5F2; }
+  .lp .wrap { max-width: 1120px; padding-top: 0; }
+  .lp h1, .lp h2, .lp h3 { font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; color: #141414; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  .lp a:focus-visible, .lp button:focus-visible, .lp summary:focus-visible { outline: 2px solid #141414; outline-offset: 3px; border-radius: 8px; }
 
-  .phone { width: 100%; max-width: 280px; aspect-ratio: 9 / 18; border-radius: 30px; overflow: hidden; background: #fff;
-    border: 8px solid #141414; box-shadow: 0 20px 50px rgba(0,0,0,.14), 0 4px 12px rgba(0,0,0,.08); margin: 0 auto; }
+  /* bara de sus */
+  .topbar.site { position: sticky; top: 0; z-index: 20; background: rgba(246,245,242,.86); backdrop-filter: saturate(1.4) blur(12px); border-bottom: 1px solid transparent; transition: border-color .2s; }
+  .topbar.site.scrolled { border-bottom-color: #E4E1DA; }
+  .nav { display: flex; gap: 26px; margin-left: 32px; }
+  .nav a { color: #141414; text-decoration: none; font-size: .95rem; font-weight: 500; }
+  .nav a:hover { text-decoration: underline; text-underline-offset: 4px; }
+  .topbar.site .btn-sm { white-space: nowrap; }
+  @media (max-width: 820px) { .nav { display: none; } }
+  @media (max-width: 420px) { .hide-xs { display: none; } }
+
+  /* hero */
+  .hero { display: grid; grid-template-columns: 1.05fr .95fr; gap: 40px; align-items: center; padding: 64px 0 40px; }
+  .hero-txt { max-width: 560px; }
+  .hero .kicker { display: inline-flex; align-items: center; gap: 8px; font-size: .9rem; font-weight: 600; color: #141414; background: #fff; border: 1px solid #E4E1DA; border-radius: 99px; padding: 6px 12px 6px 8px; margin-bottom: 22px; }
+  .hero .kicker svg { flex: none; }
+  .hero h1 { font-size: clamp(2.5rem, 6.4vw, 4.6rem); line-height: .98; letter-spacing: -.045em; font-weight: 800; margin: 0 0 22px; }
+  .hero h1 span { display: block; font-weight: 600; color: #5E5B55; }
+  .hero .lead { font-size: clamp(1.05rem, 1.6vw, 1.2rem); line-height: 1.55; color: #5E5B55; margin: 0 0 30px; max-width: 30em; }
+  .cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
+  .btn-xl { padding: 16px 26px; font-size: 1.02rem; border-radius: 14px; }
+  .lp .btn:not(.btn-ghost) { box-shadow: 0 1px 0 rgba(255,255,255,.12) inset, 0 8px 20px -8px rgba(20,20,20,.55); }
+  .link-plain { color: #141414; font-weight: 600; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+  .reassure { margin: 16px 0 0; font-size: .9rem; color: #5E5B55; }
+
+  .stage { position: relative; height: 560px; }
+  .phone { width: 100%; max-width: 280px; aspect-ratio: 9 / 18.5; border-radius: 34px; overflow: hidden; background: #fff; border: 7px solid #141414;
+    box-shadow: 0 40px 80px -30px rgba(20,20,20,.45), 0 12px 24px -12px rgba(20,20,20,.25); }
   .phone img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
-  .duo { display: flex; justify-content: center; gap: 22px; margin: 34px auto 10px; max-width: 620px; }
-  .duo figure { margin: 0; flex: 1; min-width: 0; }
-  .duo figcaption { text-align: center; font-size: .86rem; color: var(--muted); margin-top: 12px; }
-  .duo figure:last-child { transform: translateY(28px); }
-  @media (max-width: 560px) { .duo { gap: 12px; } .phone { border-width: 6px; border-radius: 22px; } }
+  .stage .phone { position: absolute; width: 250px; }
+  .stage .p1 { left: 4%; top: 30px; transform: rotate(-4deg); }
+  .stage .p2 { right: 4%; top: 0; transform: rotate(3deg); z-index: 1; }
+  .note { position: absolute; z-index: 2; background: #fff; border: 1px solid #E4E1DA; border-radius: 16px; padding: 12px 14px; box-shadow: 0 18px 40px -18px rgba(20,20,20,.35); font-size: .86rem; line-height: 1.35; display: flex; gap: 10px; align-items: center; }
+  .note b { display: block; font-size: .92rem; }
+  .note small { color: #5E5B55; }
+  .note .dot { flex: none; width: 34px; height: 34px; border-radius: 10px; background: #141414; display: grid; place-items: center; }
+  .note.n1 { left: 0; bottom: 70px; }
+  .note.n2 { right: 0; bottom: 20px; }
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; text-align: center; padding: 40px 0 16px; gap: 28px; }
+    .hero-txt { max-width: none; } .hero .lead { margin-left: auto; margin-right: auto; } .cta-row { justify-content: center; }
+    .stage { height: 470px; max-width: 460px; width: 100%; margin: 0 auto; }
+    .stage .phone { width: 205px; }
+  }
+  @media (max-width: 480px) {
+    .stage { height: 400px; } .stage .phone { width: 172px; border-width: 6px; border-radius: 26px; }
+    .note { font-size: .8rem; padding: 10px 12px; } .note .dot { width: 28px; height: 28px; }
+    .note.n1 { bottom: 40px; } .note.n2 { bottom: 0; }
+  }
 
-  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; counter-reset: s; }
-  @media (max-width: 720px) { .steps { grid-template-columns: 1fr; } }
-  .steps div { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
-  .steps div::before { counter-increment: s; content: counter(s); display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 99px; background: #141414; color: #fff; font-weight: 700; font-size: .9rem; margin-bottom: 10px; }
-  .steps b { display: block; margin-bottom: 4px; }
-  .steps span { font-size: .93rem; color: var(--muted); }
+  /* cifre: doar text, fără cutii */
+  .figures { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; padding: 34px 0 10px; border-top: 1px solid #E4E1DA; margin-top: 24px; }
+  .figures b { display: block; font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; font-size: clamp(2rem, 4.4vw, 3rem); font-weight: 800; letter-spacing: -.04em; line-height: 1; color: #141414; }
+  .figures span { display: block; margin-top: 8px; font-size: .92rem; color: #5E5B55; max-width: 14em; }
+  @media (max-width: 720px) { .figures { grid-template-columns: repeat(2, 1fr); gap: 26px 16px; } }
 
-  .feat { display: grid; grid-template-columns: 1fr 300px; gap: 48px; align-items: center; padding: 40px 0; border-top: 1px solid var(--line); }
-  .feat:nth-of-type(even) { grid-template-columns: 300px 1fr; }
+  /* titluri de secțiune */
+  .sec { padding: 96px 0 0; }
+  .sec-h { font-size: clamp(2rem, 4.6vw, 3.1rem); line-height: 1.02; letter-spacing: -.04em; font-weight: 800; margin: 0 0 14px; max-width: 16em; }
+  .sec-p { color: #5E5B55; font-size: 1.08rem; margin: 0 0 44px; max-width: 34em; }
+  @media (max-width: 720px) { .sec { padding-top: 72px; } }
+
+  /* cum funcționează: linia care se desenează la scroll, de la farfuria 1 la farfuria 3 */
+  .route { position: relative; max-width: 760px; margin: 0; padding: 0; list-style: none; --p: 0; }
+  .route::before, .route .fill { content: ""; position: absolute; left: 27px; top: 28px; width: 3px; border-radius: 3px; }
+  .route::before { bottom: 28px; background: repeating-linear-gradient(to bottom, #D6D2CA 0 6px, transparent 6px 12px); }
+  .route .fill { height: calc((100% - 56px) * var(--p)); background: #141414; }
+  .route .stop { position: relative; display: grid; grid-template-columns: 58px 1fr; gap: 22px; padding: 0 0 56px; }
+  .route .stop:last-child { padding-bottom: 0; }
+  .plate { position: relative; z-index: 1; width: 58px; height: 58px; border-radius: 50%; background: #F6F5F2; display: grid; place-items: center; }
+  .plate svg { display: block; }
+  .plate .rim { fill: #fff; stroke: #D6D2CA; stroke-width: 2; transition: fill .35s, stroke .35s; }
+  .plate .well { fill: none; stroke: #D6D2CA; stroke-width: 2; transition: stroke .35s; }
+  .plate text { font: 800 15px 'Bricolage Grotesque', system-ui, sans-serif; fill: #8A867F; transition: fill .35s; }
+  .route .stop.on .rim { fill: #141414; stroke: #141414; }
+  .route .stop.on .well { stroke: #F6F5F2; }
+  .route .stop.on text { fill: #fff; }
+  .route h3 { font-size: clamp(1.35rem, 2.6vw, 1.75rem); letter-spacing: -.025em; line-height: 1.15; margin: 12px 0 8px; }
+  .route p { color: #5E5B55; margin: 0; font-size: 1.02rem; max-width: 34em; }
+  .route .tip { display: inline-block; margin-top: 12px; font-size: .88rem; color: #141414; background: #fff; border: 1px solid #E4E1DA; border-radius: 10px; padding: 7px 11px; }
+  @media (prefers-reduced-motion: reduce) { .route { --p: 1 !important; } .plate .rim, .plate .well, .plate text { transition: none; } }
+
+  /* funcții */
+  .feat { display: grid; grid-template-columns: 1fr 320px; gap: 72px; align-items: center; padding: 56px 0; border-top: 1px solid #E4E1DA; }
+  .feat:nth-of-type(even) { grid-template-columns: 320px 1fr; }
   .feat:nth-of-type(even) .feat-txt { order: 2; }
-  .feat h2 { font-size: clamp(1.35rem, 3.6vw, 1.75rem); line-height: 1.2; letter-spacing: -.01em; margin: 0 0 10px; }
-  .feat p { color: var(--muted); margin: 0 0 14px; font-size: 1.02rem; }
-  .feat ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
-  .feat li { padding-left: 26px; position: relative; font-size: .96rem; }
-  .feat li::before { content: ""; position: absolute; left: 0; top: .35em; width: 14px; height: 8px; border-left: 2px solid #141414; border-bottom: 2px solid #141414; transform: rotate(-45deg); }
-  .who { display: inline-block; font-size: .74rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 9px; border-radius: 99px; background: #141414; color: #fff; margin-bottom: 12px; }
-  .who.cl { background: #efede8; color: var(--ink); }
+  .feat h2 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.08; letter-spacing: -.035em; font-weight: 800; margin: 0 0 14px; }
+  .feat p { color: #5E5B55; margin: 0 0 20px; font-size: 1.05rem; max-width: 32em; }
+  .feat ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  .feat li { padding-left: 30px; position: relative; font-size: .98rem; }
+  .feat li::before { content: ""; position: absolute; left: 0; top: .2em; width: 18px; height: 18px; border-radius: 50%; background: #141414 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center / 11px no-repeat; }
+  .who { display: inline-block; font-size: .88rem; font-weight: 600; color: #5E5B55; margin-bottom: 12px; }
+  .who::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #141414; margin-right: 8px; vertical-align: 1px; }
+  .who.cl::before { background: #fff; box-shadow: inset 0 0 0 2px #141414; }
+  .feat .phone { max-width: 300px; margin: 0 auto; }
   @media (max-width: 760px) {
-    .feat, .feat:nth-of-type(even) { grid-template-columns: 1fr; gap: 24px; padding: 32px 0; }
+    .feat, .feat:nth-of-type(even) { grid-template-columns: 1fr; gap: 28px; padding: 44px 0; }
     .feat:nth-of-type(even) .feat-txt { order: 0; }
     .feat .phone { max-width: 250px; }
   }
 
-  .section-h { text-align: center; margin: 8px 0 4px; font-size: clamp(1.4rem, 4vw, 1.9rem); letter-spacing: -.01em; }
-  .section-p { text-align: center; color: var(--muted); margin: 0 auto 18px; max-width: 560px; }
-  .faq details { border-top: 1px solid var(--line); padding: 12px 0; }
-  .faq summary { cursor: pointer; font-weight: 600; }
-  .faq p { margin: 8px 0 0; color: var(--muted); font-size: .94rem; }
-  .calc { text-align: center; background: #141414; color: #fff; border-radius: 16px; padding: 22px 18px; font-size: 1.02rem; }
-  .calc b { color: #fff; }
-  .cta { text-align: center; padding: 28px 0 0; }
-  .cta h2 { font-size: clamp(1.4rem, 4vw, 1.9rem); margin: 0 0 8px; }
-  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
-  .topbar.site { position: sticky; top: 0; z-index: 20; background: rgba(255,255,255,.92); backdrop-filter: saturate(1.4) blur(10px); }
-  .nav { display: flex; gap: 22px; margin-left: 28px; }
-  .nav a { color: var(--ink); text-decoration: none; font-size: .95rem; font-weight: 500; }
-  .nav a:hover { text-decoration: underline; }
-  .topbar.site .btn-sm { white-space: nowrap; }
-  @media (max-width: 820px) { .nav { display: none; } }
-  @media (max-width: 420px) { .hide-xs { display: none; } }
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; margin-top: 56px; }
-  .stats div { background: #fff; padding: 18px 12px; text-align: center; }
-  .stats b { display: block; font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; font-size: clamp(1.4rem, 4vw, 2rem); letter-spacing: -.02em; line-height: 1.1; }
-  .stats span { font-size: .86rem; color: var(--muted); }
-  @media (max-width: 640px) { .stats { grid-template-columns: repeat(2, 1fr); } }
-  .incl { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 6px auto 4px; max-width: 760px; }
-  .incl span { font-size: .86rem; background: #f6f5f2; border: 1px solid var(--line); border-radius: 99px; padding: 6px 12px; }
-  .incl span::before { content: "✓ "; font-weight: 700; }
-  .plans { padding-top: 12px; }
-  .plan { position: relative; }
-  .plan .plan-tag { position: absolute; top: -11px; left: 16px; }
-  .plan .per-client { font-size: .9rem; margin-top: 2px; }
-  .plan .grow { flex: 1; }
-  .foot { border-top: 1px solid var(--line); margin-top: 48px; padding: 28px 16px 36px; background: #fff; }
-  .foot-in { max-width: 1040px; margin: 0 auto; display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 24px; font-size: .9rem; color: var(--muted); }
-  .foot-in b { display: block; color: var(--ink); margin-bottom: 8px; font-size: .92rem; }
-  .foot-in a { color: var(--muted); }
-  .foot-in a.pt-brand { color: var(--ink); text-decoration: none; }
+  /* socoteala */
+  .calc { margin: 72px 0 0; padding: 40px 0; border-top: 1px solid #E4E1DA; border-bottom: 1px solid #E4E1DA; }
+  .calc p { margin: 0; font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; font-size: clamp(1.4rem, 3.2vw, 2.1rem); line-height: 1.2; letter-spacing: -.03em; font-weight: 600; max-width: 26em; color: #141414; }
+  .calc p span { color: #5E5B55; }
+
+  /* prețuri */
+  .price-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 18px 24px; margin-bottom: 30px; }
+  .price-head .sec-p { margin: 0; }
+  .lp .tabs { margin: 0; background: #ECE9E3; }
+  .lp .tabs button { white-space: nowrap; padding: 9px 16px; }
+  .incl { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 30px; }
+  .incl span { font-size: .88rem; background: #fff; border: 1px solid #E4E1DA; border-radius: 99px; padding: 7px 13px; }
+  .lp .plans { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 0 0 18px; padding: 14px 0 0; align-items: stretch; }
+  @media (max-width: 980px) { .lp .plans { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .lp .plans { grid-template-columns: 1fr; } }
+  .lp .plan { position: relative; display: flex; flex-direction: column; gap: 4px; background: #fff; border: 1px solid #E4E1DA; border-radius: 20px; padding: 24px 22px 22px; box-shadow: none; color: #141414; }
+  .lp .plan h3 { margin: 0 0 14px; font-size: 1.25rem; letter-spacing: -.02em; }
+  .lp .plan .price { font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; font-size: 2.6rem; font-weight: 800; letter-spacing: -.045em; line-height: 1; }
+  .lp .plan .price small { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: .9rem; font-weight: 500; letter-spacing: 0; color: #5E5B55; }
+  .lp .plan .sub { font-size: .86rem; color: #5E5B55; min-height: 1.3em; }
+  .lp .plan .cap { margin: 16px 0 2px; padding-top: 16px; border-top: 1px solid #E4E1DA; font-size: .98rem; }
+  .lp .plan .note2 { color: #5E5B55; font-size: .9rem; margin: 6px 0 20px; flex: 1; }
+  .lp .plan .btn { margin-top: 0; }
+  .lp .plan.best { background: #141414; color: #fff; border-color: #141414; box-shadow: 0 30px 60px -30px rgba(20,20,20,.7); }
+  .lp .plan.best h3, .lp .plan.best .price { color: #fff; }
+  .lp .plan.best .price small, .lp .plan.best .sub, .lp .plan.best .note2 { color: #B9B5AD; }
+  .lp .plan.best .cap { border-top-color: #34322F; }
+  .lp .plan.best .btn { background: #fff; color: #141414; border-color: #fff; box-shadow: none; }
+  .lp .plan .plan-tag { position: absolute; top: -12px; left: 22px; background: #fff; color: #141414; border: 1px solid #141414; font-size: .78rem; font-weight: 700; letter-spacing: 0; text-transform: none; padding: 3px 10px; border-radius: 99px; }
+  .lp .plan.custom { background: transparent; color: #141414; border: 1px dashed #BDB8AE; box-shadow: none; }
+  .lp .plan.custom .price { font-size: 2.1rem; }
+  .lp .plan.custom .btn { background: transparent; color: #141414; border-color: #141414; box-shadow: none; }
+  .lp .fine { font-size: .88rem; color: #5E5B55; margin: 0; }
+
+  /* întrebări */
+  .faq-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 48px; align-items: start; }
+  @media (max-width: 820px) { .faq-grid { grid-template-columns: 1fr; gap: 8px; } }
+  .faq details { border-top: 1px solid #E4E1DA; }
+  .faq details:last-child { border-bottom: 1px solid #E4E1DA; }
+  .faq summary { list-style: none; cursor: pointer; font-weight: 600; font-size: 1.05rem; padding: 18px 40px 18px 0; position: relative; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: ""; position: absolute; right: 4px; top: 50%; width: 14px; height: 14px; margin-top: -7px;
+    background: linear-gradient(#141414,#141414) center / 14px 2px no-repeat, linear-gradient(#141414,#141414) center / 2px 14px no-repeat; transition: transform .2s; }
+  .faq details[open] summary::after { transform: rotate(45deg); }
+  .faq p { margin: 0 0 18px; color: #5E5B55; max-width: 36em; }
+
+  /* îndemnul de la final */
+  .closing { margin: 104px 0 0; background: #141414; color: #fff; border-radius: 28px; padding: 64px 32px; display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: end; }
+  .closing h2 { color: #fff; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1; letter-spacing: -.045em; font-weight: 800; margin: 0 0 14px; }
+  .closing p { margin: 0; color: #B9B5AD; font-size: 1.05rem; }
+  .closing .btn { background: #fff; color: #141414; border-color: #fff; box-shadow: none; }
+  @media (max-width: 720px) { .closing { grid-template-columns: 1fr; padding: 44px 24px; border-radius: 22px; margin-top: 80px; } }
+
+  /* subsol */
+  .foot { border-top: 1px solid #E4E1DA; margin-top: 72px; padding: 36px 16px 40px; background: transparent; }
+  .foot-in { max-width: 1088px; margin: 0 auto; display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 24px; font-size: .9rem; color: #5E5B55; }
+  .foot-in b { display: block; color: #141414; margin-bottom: 8px; font-size: .92rem; }
+  .foot-in a { color: #5E5B55; }
+  .foot-in a.pt-brand { color: #141414; text-decoration: none; }
   .foot-in .pt-brand b { display: inline; margin: 0; font-size: inherit; color: inherit; }
   .foot-in p { margin: 0 0 6px; }
   .anpc { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-  .anpc a { display: inline-block; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font-size: .74rem; line-height: 1.25; text-decoration: none; color: var(--ink); background: #faf9f6; max-width: 190px; }
+  .anpc a { display: inline-block; border: 1px solid #E4E1DA; border-radius: 8px; padding: 7px 10px; font-size: .74rem; line-height: 1.25; text-decoration: none; color: #141414; background: #fff; max-width: 190px; }
   .anpc a b { display: inline; margin: 0; font-size: .74rem; }
   @media (max-width: 720px) { .foot-in { grid-template-columns: 1fr; } }
-  .phone { max-width: 300px; }
-  @media (min-width: 761px) {
-    .feat { grid-template-columns: 1fr 320px; }
-    .feat:nth-of-type(even) { grid-template-columns: 320px 1fr; }
-  }
 </style>
 </head>
-<body>
+<body class="lp">
 <header class="topbar site">
   <a class="pt-brand" href="#" aria-label="CoachMeal"><b>c<svg class="pt-o" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="currentColor"/><circle cx="32" cy="32" r="17" fill="none" stroke="#F6F5F2" stroke-width="5"/></svg>ach</b><span>meal</span></a>
   <nav class="nav"><a href="#functii">Funcții</a><a href="#preturi">Prețuri</a><a href="#intrebari">Întrebări</a></nav>
@@ -111,36 +199,46 @@
   <a class="btn btn-ghost btn-sm hide-xs" href="index.html">Intră în cont</a>
   <a class="btn btn-sm" href="antrenor.html">Încearcă gratuit</a>
 </header>
-<main class="wrap stack">
+<main class="wrap">
   <section class="hero">
-    <span class="eyebrow">Pentru antrenori personali</span>
-    <h1>Alimentația clienților tăi,<br>rezolvată în 5 minute</h1>
-    <p class="lead">Tu setezi caloriile și macro-urile. Programul face meniul pe 7 zile, lista de cumpărături și ajustările zilnice. Tu doar urmărești progresul.</p>
-    <a class="btn" href="antrenor.html">Încearcă 7 zile gratuit</a>
-    <p class="small muted" style="margin-top:10px">Fără card. Fără obligații.</p>
-    <div class="duo">
-      <figure><div class="phone"><img src="assets/img/clienti.jpg" alt="Panoul antrenorului: clienții și alertele" loading="eager"></div><figcaption>Ce vezi tu</figcaption></figure>
-      <figure><div class="phone"><img src="assets/img/plan.jpg" alt="Planul alimentar al clientului pe 7 zile" loading="eager"></div><figcaption>Ce vede clientul</figcaption></figure>
+    <div class="hero-txt">
+      <span class="kicker"><svg width="18" height="18" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="#141414"/><circle cx="32" cy="32" r="17" fill="none" stroke="#fff" stroke-width="6"/></svg>Pentru antrenori personali</span>
+      <h1>Planurile alimentare ale clienților tăi. <span>Gata în 5 minute.</span></h1>
+      <p class="lead">Tu setezi caloriile și macro-urile. CoachMeal face meniul pe 7 zile, lista de cumpărături și ajustările. Tu urmărești doar progresul.</p>
+      <div class="cta-row">
+        <a class="btn btn-xl" href="antrenor.html">Încearcă 7 zile gratuit</a>
+        <a class="link-plain" href="#cum">Vezi cum funcționează</a>
+      </div>
+      <p class="reassure">Fără card. Anulezi oricând.</p>
     </div>
-    <div class="stats">
-      <div><b>250</b><span>rețete cu pași și timp</span></div>
-      <div><b>392</b><span>alimente, inclusiv produse Lidl</span></div>
-      <div><b>5 min</b><span>până la primul plan</span></div>
-      <div><b>7 zile</b><span>gratuit, fără card</span></div>
-    </div>
-  </section>
-
-  <section style="padding-top:20px">
-    <h2 class="section-h">Cum funcționează</h2>
-    <p class="section-p">Fără tabele, fără PDF-uri trimise pe WhatsApp.</p>
-    <div class="steps">
-      <div><b>Trimiți link-ul tău</b><span>Clientul își face cont gratuit și completează vârsta, greutatea, preferințele și alimentele pe care nu le mănâncă.</span></div>
-      <div><b>Setezi caloriile</b><span>Calculatorul îți propune cifrele. Tu le schimbi cum crezi: în procente, grame sau g/kg corp.</span></div>
-      <div><b>Clientul primește planul</b><span>Meniu pe 7 zile cu rețete și gramaje exacte, refăcut singur în fiecare săptămână.</span></div>
+    <div class="stage">
+      <div class="phone p1"><img src="assets/img/clienti.jpg" alt="Panoul antrenorului: clienții și alertele" loading="eager"></div>
+      <div class="phone p2"><img src="assets/img/plan.jpg" alt="Planul alimentar al clientului pe 7 zile" loading="eager"></div>
+      <div class="note n1"><span class="dot"><svg width="18" height="18" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="#fff"/><circle cx="32" cy="32" r="17" fill="none" stroke="#141414" stroke-width="6"/></svg></span><span><b>Ce vezi tu</b><small>Cine se ține de plan, dintr-o privire</small></span></div>
+      <div class="note n2"><span><b>Ce vede clientul</b><small>Mesele zilei, cu gramaje exacte</small></span></div>
     </div>
   </section>
 
-  <section id="functii">
+  <div class="figures">
+    <div><b>250</b><span>de rețete, cu pași și timp de preparare</span></div>
+    <div><b>392</b><span>de alimente, inclusiv produse Lidl</span></div>
+    <div><b>5 min</b><span>până la primul plan trimis</span></div>
+    <div><b>7 zile</b><span>gratuit, fără card</span></div>
+  </div>
+
+  <section class="sec" id="cum">
+    <h2 class="sec-h">Trei pași, apoi merge singur</h2>
+    <p class="sec-p">Fără tabele și fără PDF-uri trimise pe WhatsApp.</p>
+    <div class="route" id="route" role="list">
+      <span class="fill" aria-hidden="true"></span>
+      <div class="stop" role="listitem"><span class="plate" aria-hidden="true"><svg width="58" height="58" viewBox="0 0 58 58"><circle class="rim" cx="29" cy="29" r="27"/><circle class="well" cx="29" cy="29" r="17"/><text x="29" y="34" text-anchor="middle">1</text></svg></span><div><h3>Trimiți link-ul tău</h3><p>Clientul își face cont gratuit și completează vârsta, greutatea, preferințele și alimentele pe care nu le mănâncă.</p><span class="tip">Durează 2 minute, de pe telefon</span></div></div>
+      <div class="stop" role="listitem"><span class="plate" aria-hidden="true"><svg width="58" height="58" viewBox="0 0 58 58"><circle class="rim" cx="29" cy="29" r="27"/><circle class="well" cx="29" cy="29" r="17"/><text x="29" y="34" text-anchor="middle">2</text></svg></span><div><h3>Setezi caloriile</h3><p>Calculatorul îți propune cifrele. Tu le schimbi cum crezi: în procente, în grame sau în g/kg corp.</p><span class="tip">Sau alegi tu alimentele permise</span></div></div>
+      <div class="stop" role="listitem"><span class="plate" aria-hidden="true"><svg width="58" height="58" viewBox="0 0 58 58"><circle class="rim" cx="29" cy="29" r="27"/><circle class="well" cx="29" cy="29" r="17"/><text x="29" y="34" text-anchor="middle">3</text></svg></span><div><h3>Clientul primește planul</h3><p>Meniu pe 7 zile, cu rețete și gramaje exacte, refăcut singur în fiecare săptămână. Tu vezi cum îl respectă.</p><span class="tip">Plus lista de cumpărături, gata făcută</span></div></div>
+    </div>
+  </section>
+  <section class="sec" id="functii">
+    <h2 class="sec-h">Ce face pentru tine și pentru client</h2>
+    <p class="sec-p">Același plan, văzut din două părți: tu decizi, clientul urmează.</p>
     <div class="feat">
       <div class="feat-txt">
         <span class="who cl">Pentru client</span>
@@ -227,35 +325,44 @@
     </div>
   </section>
 
-  <p class="calc"><b>Socoteala simplă:</b> dacă ceri unui singur client 150–300 lei în plus pe lună pentru planul alimentar, abonamentul se plătește singur.</p>
+  <div class="calc"><p>Dacă ceri unui singur client 150–300 lei în plus pe lună pentru planul alimentar, <span>abonamentul se plătește singur.</span></p></div>
 
-  <section class="card" id="preturi">
-    <h2 class="section-h" style="margin-top:6px">Prețuri</h2>
-    <p class="muted center" style="margin:0 0 6px">Plătești după câți clienți activi ai. Clienții arhivați nu se numără.</p>
-    <div class="tabs" id="per" style="max-width:340px;margin:10px auto 4px">
-      <button type="button" data-per="month" class="on">Lunar</button>
-      <button type="button" data-per="year">Anual · −17%</button>
+  <section class="sec" id="preturi">
+    <div class="price-head">
+      <div>
+        <h2 class="sec-h">Prețuri</h2>
+        <p class="sec-p">Plătești după câți clienți activi ai. Clienții arhivați nu se numără.</p>
+      </div>
+      <div class="tabs" id="per">
+        <button type="button" data-per="month" class="on">Lunar</button>
+        <button type="button" data-per="year">Anual, cu 2 luni gratuite</button>
+      </div>
     </div>
-    <p class="small center" style="margin:14px 0 6px"><b>Inclus în toate planurile</b></p>
-    <div class="incl"><span>Planuri automate pe 7 zile</span><span>Meniu făcut de tine</span><span>Lista de cumpărături</span><span>Check-in cu poze</span><span>Grafic de greutate</span><span>Alerte</span><span>Chat cu clienții</span></div>
+    <div class="incl" aria-label="Inclus în toate planurile"><span>Planuri automate pe 7 zile</span><span>Meniu făcut de tine</span><span>Lista de cumpărături</span><span>Check-in cu poze</span><span>Grafic de greutate</span><span>Alerte</span><span>Chat cu clienții</span></div>
     <div class="plans" id="plans"></div>
-    <p class="small muted center" style="margin:0">Prețuri finale în lei. Plata cu cardul, prin Stripe. Poți schimba sau anula oricând.</p>
+    <p class="fine">Toate planurile includ tot ce e mai sus. Prețuri finale în lei. Plata cu cardul, prin Stripe. Poți schimba sau anula oricând.</p>
   </section>
 
-  <section class="card faq" id="intrebari">
-    <h2 class="section-h" style="text-align:left">Întrebări</h2>
-    <details><summary>Ce se întâmplă după cele 7 zile?</summary><p>Alegi un abonament. Dacă nu alegi, clienții tăi își folosesc în continuare planurile, dar tu nu le mai poți schimba caloriile sau scrie până activezi un abonament.</p></details>
-    <details><summary>Clienții plătesc ceva?</summary><p>Nu. Clientul își face cont gratuit din link-ul tău și te plătește pe tine, ca până acum.</p></details>
-    <details><summary>Ce se întâmplă când ajung la limita de clienți?</summary><p>Nu se oprește nimic: clienții existenți merg normal. Doar clienții noi nu se mai pot înscrie până treci la planul următor sau arhivezi pe cineva.</p></details>
-    <details><summary>Pot face eu meniul unui client?</summary><p>Da. Alegi alimentele pentru fiecare masă, iar programul potrivește gramajele la caloriile clientului. Hotărăști tu dacă clientul poate schimba ceva.</p></details>
-    <details><summary>Merge și pentru clienții de la sală?</summary><p>Da. Le dai link-ul, își fac contul în 2 minute și au planul pe telefon. Tu îl ajustezi între antrenamente.</p></details>
-    <details><summary>Cum primesc factura?</summary><p>După fiecare plată primești pe email confirmarea plății și factura.</p></details>
+  <section class="sec faq" id="intrebari">
+    <div class="faq-grid">
+      <h2 class="sec-h">Întrebări</h2>
+      <div>
+        <details><summary>Ce se întâmplă după cele 7 zile?</summary><p>Alegi un abonament. Dacă nu alegi, clienții tăi își folosesc în continuare planurile, dar tu nu le mai poți schimba caloriile sau scrie până activezi un abonament.</p></details>
+        <details><summary>Clienții plătesc ceva?</summary><p>Nu. Clientul își face cont gratuit din link-ul tău și te plătește pe tine, ca până acum.</p></details>
+        <details><summary>Ce se întâmplă când ajung la limita de clienți?</summary><p>Nu se oprește nimic: clienții existenți merg normal. Doar clienții noi nu se mai pot înscrie până treci la planul următor sau arhivezi pe cineva.</p></details>
+        <details><summary>Pot face eu meniul unui client?</summary><p>Da. Alegi alimentele pentru fiecare masă, iar programul potrivește gramajele la caloriile clientului. Hotărăști tu dacă clientul poate schimba ceva.</p></details>
+        <details><summary>Merge și pentru clienții de la sală?</summary><p>Da. Le dai link-ul, își fac contul în 2 minute și au planul pe telefon. Tu îl ajustezi între antrenamente.</p></details>
+        <details><summary>Cum primesc factura?</summary><p>După fiecare plată primești pe email confirmarea plății și factura.</p></details>
+      </div>
+    </div>
   </section>
 
-  <section class="cta">
-    <h2>Încearcă pe clienții tăi</h2>
-    <p class="muted" style="margin:0 0 16px">7 zile gratuit, până la 10 clienți. Fără card.</p>
-    <a class="btn" href="antrenor.html">Creează cont de antrenor</a>
+  <section class="closing">
+    <div>
+      <h2>Încearcă pe clienții tăi.</h2>
+      <p>7 zile gratuit, până la 10 clienți. Fără card.</p>
+    </div>
+    <a class="btn btn-xl" href="antrenor.html">Creează cont de antrenor</a>
   </section>
 </main>
 <footer class="foot">
@@ -293,18 +400,19 @@
 (function () {
   var P = [
     { name: 'Start', clients: 10, month: 149, year: 1490, note: 'Pentru început sau pentru clienții de la sală.' },
-    { name: 'Pro', clients: 20, month: 249, year: 2490, note: 'Loc de creștere, cost mai mic pe client.', best: true },
+    { name: 'Pro', clients: 20, month: 249, year: 2490, note: 'Loc de creștere, cu un cost mai mic pe client.', best: true },
     { name: 'Studio', clients: 50, month: 499, year: 4990, note: 'Pentru antrenorii online cu mulți clienți.' }
   ], per = 'month';
   function lei(n) { return n.toLocaleString('ro-RO') + ' lei'; }
+  P.forEach(function (p) { p.price = function (n) { return n.toLocaleString('ro-RO'); }; });
   function render() {
     document.getElementById('plans').innerHTML = P.map(function (p) {
-      return '<div class="plan' + (p.best ? ' best' : '') + '">' + (p.best ? '<span class="plan-tag">Recomandat</span>' : '') + '<h3>' + p.name + '</h3>' +
-        '<div class="price">' + lei(per === 'month' ? p.month : p.year) + ' <small>/ ' + (per === 'month' ? 'lună' : 'an') + '</small></div>' +
-        (per === 'year' ? '<div class="small muted">adică ' + lei(Math.round(p.year / 12)) + ' pe lună</div>' : '') +
-        '<div class="per-client">până la <b>' + p.clients + ' clienți activi</b></div>' +
-        '<div class="small muted">~' + Math.round((per === 'month' ? p.month : p.year / 12) / p.clients) + ' lei pe client pe lună</div>' +
-        '<p class="small muted grow" style="margin:6px 0 12px">' + p.note + '</p><a class="btn btn-block' + (p.best ? '' : ' btn-ghost') + '" href="antrenor.html">Începe gratuit</a></div>';
+      var price = per === 'month' ? p.month : p.year;
+      return '<div class="plan' + (p.best ? ' best' : '') + '">' + (p.best ? '<span class="plan-tag">Cel mai ales</span>' : '') + '<h3>' + p.name + '</h3>' +
+        '<div class="price">' + p.price(price) + ' <small>lei / ' + (per === 'month' ? 'lună' : 'an') + '</small></div>' +
+        '<div class="sub">' + (per === 'year' ? 'adică ' + lei(Math.round(p.year / 12)) + ' pe lună' : '~' + Math.round(p.month / p.clients) + ' lei pe client pe lună') + '</div>' +
+        '<div class="cap">până la <b>' + p.clients + ' clienți activi</b></div>' +
+        '<p class="note2">' + p.note + '</p><a class="btn btn-block' + (p.best ? '' : ' btn-ghost') + '" href="antrenor.html">Începe gratuit</a></div>';
     }).join('') + customPlan();
   }
   function customPlan() {
@@ -312,15 +420,35 @@
     var href = 'mailto:' + mail + '?subject=' + encodeURIComponent('Ofertă CoachMeal – peste 50 de clienți') +
       '&body=' + encodeURIComponent('Bună,\n\nAș vrea o ofertă pentru CoachMeal.\n\nNume / firmă:\nCâți clienți activi am acum:\nCâți clienți estimez:\nTelefon:\n\nMulțumesc!');
     return '<div class="plan custom"><h3>Peste 50</h3><div class="price">La cerere</div>' +
-      '<div class="per-client">pentru <b>peste 50 de clienți activi</b></div>' +
-      '<div class="small muted">preț mai mic pe client</div>' +
-      '<p class="small muted grow" style="margin:6px 0 12px">Pentru antrenorii online mari și studiouri. Te ajutăm și la pornire.</p><a class="btn btn-block" href="' + href + '">Cere ofertă</a></div>';
+      '<div class="sub">preț mai mic pe client</div>' +
+      '<div class="cap">pentru <b>peste 50 de clienți activi</b></div>' +
+      '<p class="note2">Pentru antrenorii online mari și studiouri. Te ajutăm și la pornire.</p><a class="btn btn-block" href="' + href + '">Cere ofertă</a></div>';
   }
   document.getElementById('per').addEventListener('click', function (e) {
     var b = e.target.closest('[data-per]'); if (!b) return; per = b.getAttribute('data-per');
     this.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); }); render();
   });
   render();
+})();
+</script>
+<script>
+(function () {
+  // linia dintre pași se desenează pe măsură ce derulezi; farfuriile se „umplu” când linia ajunge la ele
+  var route = document.getElementById('route'), bar = document.querySelector('.topbar.site');
+  if (!route) return;
+  var items = [].slice.call(route.querySelectorAll('.stop')), still = window.matchMedia('(prefers-reduced-motion: reduce)').matches, ticking = false;
+  function update() {
+    ticking = false;
+    if (bar) bar.classList.toggle('scrolled', window.scrollY > 8);
+    var r = route.getBoundingClientRect(), vh = window.innerHeight, span = r.height - 56;
+    var p = still ? 1 : Math.max(0, Math.min(1, (vh * 0.62 - (r.top + 28)) / span));
+    route.style.setProperty('--p', p.toFixed(4));
+    items.forEach(function (li) { li.classList.toggle('on', still || (li.offsetTop) <= p * span + 2); });
+  }
+  function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  update();
 })();
 </script>
 </body>
