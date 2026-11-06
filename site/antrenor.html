@@ -162,6 +162,8 @@
     App.show($('rmLogo'), !!me.logo_url);
   }
 
+  function initials(n) { var p = String(n || '').trim().split(/\s+/); return ((p[0] || '')[0] || '').toUpperCase() + ((p.length > 1 ? p[p.length - 1][0] : '') || '').toUpperCase(); }
+  function avIdx(id) { var h = 0; for (var i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0; return h % 6; }
   function renderClients() {
     var showArch = $('showArch').checked;
     var active = clients.filter(function (c) { return c.status === 'active'; });
@@ -173,7 +175,7 @@
     $('clList').innerHTML = shown.map(function (c) {
       var isArch = c.status === 'archived', st = statusOf(c);
       return '<li>' +
-        '<button type="button" class="who who-btn" data-open="' + esc(c.id) + '"><b>' + esc(c.full_name) + (isArch ? ' <span class="badge">arhivat</span>' : '') + '</b>' +
+        '<button type="button" class="who who-btn" data-open="' + esc(c.id) + '"><b><span class="av av' + avIdx(c.id) + '" aria-hidden="true">' + esc(initials(c.full_name)) + '</span>' + esc(c.full_name) + (isArch ? ' <span class="badge">arhivat</span>' : '') + '</b>' +
         '<span class="small muted">Înscris pe ' + App.fmtDate(c.joined_at) + ' · ultima intrare: ' + App.ago(c.last_seen_at) + '</span>' +
         '<span class="cl-tags"><span class="badge ' + st[0] + '">' + esc(st[1]) + '</span>' + tagsOf(c) + '</span></button>' +
         '<button class="btn btn-ghost btn-sm" type="button" data-id="' + esc(c.id) + '" data-to="' + (isArch ? 'active' : 'archived') + '">' +
@@ -188,6 +190,7 @@
     var o = info.ov[c.id] || {}, a = adh(c), h = '';
     if (a != null) h += '<span class="badge ' + (a >= 80 ? 'badge-ok' : a >= 50 ? 'badge-warn' : 'badge-bad') + '">respectă ' + a + '%</span>';
     if (o.w_last != null && o.w_first != null) { var d = Math.round((o.w_last - o.w_first) * 10) / 10; h += '<span class="badge">' + String(o.w_last).replace('.', ',') + ' kg' + (d ? ' (' + (d > 0 ? '+' : '−') + String(Math.abs(d)).replace('.', ',') + ')' : '') + '</span>'; }
+    if (o.water_days >= 3 && o.water_goal) { var wp = Math.round(o.water_avg / o.water_goal * 100); h += '<span class="badge badge-water' + (wp < 60 ? ' low' : '') + '">💧 ' + String(Math.round(o.water_avg / 100) / 10).replace('.', ',') + ' L/zi</span>'; }
     if (o.unread) h += '<span class="badge badge-msg">' + o.unread + (o.unread === 1 ? ' mesaj nou' : ' mesaje noi') + '</span>';
     return h;
   }
