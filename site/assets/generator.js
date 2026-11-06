@@ -709,11 +709,14 @@
   function addExtra(plan, di, entry) { var d = plan.days[di]; (d.extra = d.extra || []).push(entry); return rebalanceDay(plan, di); }
   function removeExtra(plan, di, k) { var d = plan.days[di]; (d.extra || []).splice(k, 1); return rebalanceDay(plan, di); }
   // cauta in baza de alimente (pentru „am mancat altceva”)
-  function searchFoods(data, text, n) {
+  // opts.shop = 'lidl': doar produsele din magazinul acela (fără text: toată lista magazinului)
+  function searchFoods(data, text, n, opts) {
     var norm = function (x) { return x.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
-    var q = norm(text || '').trim(); if (q.length < 2) return [];
+    var shop = opts && opts.shop, q = norm(text || '').trim();
+    if (shop && q.length < 2) return data.foods.filter(function (x) { return x.shop === shop; }).sort(function (a, b) { return a.cat.localeCompare(b.cat, 'ro') || a.name.localeCompare(b.name, 'ro'); }).slice(0, n || 200);
+    if (q.length < 2) return [];
     var words = q.split(/\s+/);
-    return data.foods.filter(function (x) { var t = norm(x.name + ' ' + x.cat); return words.every(function (w) { return t.indexOf(w) >= 0; }); })
+    return data.foods.filter(function (x) { if (shop && x.shop !== shop) return false; var t = norm(x.name + ' ' + x.cat + (x.shop ? ' ' + x.shop : '')); return words.every(function (w) { return t.indexOf(w) >= 0; }); })
       .sort(function (a, b) { return norm(a.name).indexOf(q) - norm(b.name).indexOf(q) || a.name.length - b.name.length; })
       .slice(0, n || 8);
   }

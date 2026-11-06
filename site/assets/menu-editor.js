@@ -81,14 +81,16 @@
     return '<div class="tsum">' + cell('t-k', 'kcal', '', 'kcal') + cell('t-p', 'p', ' g', 'proteine') + cell('t-c', 'c', ' g', 'carbo') + cell('t-f', 'f', ' g', 'grăsimi') + '</div>';
   }
   function resultsHtml(mi) {
-    var o = E.search[mi]; if (!o || !o.q || o.q.trim().length < 2) return '';
+    var o = E.search[mi] || {}; if ((!E.shop || E.shopFocus !== mi) && (!o.q || o.q.trim().length < 2)) return '';
     var own = Object.keys(E.draft.foods).map(function (k) { return E.draft.foods[k]; });
     var norm = function (x) { return x.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
-    var q = norm(o.q.trim());
-    var res = own.filter(function (x) { return norm(x.name).indexOf(q) >= 0; }).concat(G.searchFoods(E.content, o.q, 8)).slice(0, 8);
-    if (!res.length) return '<p class="muted small" style="margin:6px 0">Nu am găsit „' + esc(o.q) + '”. Îl poți adăuga ca aliment propriu, cu valorile de pe etichetă.</p>';
-    return res.map(function (x) { return '<button type="button" class="me-res" data-add="' + mi + ':' + esc(x.id) + '"><span>' + esc(fname(x)) + '</span><small>' + R(x.kcal) + ' kcal · ' + R(x.p) + ' P · ' + R(x.c) + ' C · ' + R(x.f) + ' G la 100 g</small></button>'; }).join('');
+    var q = norm((o.q || '').trim()), all = E.shop && q.length < 2;
+    var res = (E.shop || q.length < 2 ? [] : own.filter(function (x) { return norm(x.name).indexOf(q) >= 0; })).concat(G.searchFoods(E.content, o.q, all ? 200 : 8, { shop: E.shop })).slice(0, all ? 200 : 8);
+    if (!res.length) return '<p class="muted small" style="margin:6px 0">Nu am găsit „' + esc(o.q) + '”' + (E.shop ? ' printre produsele Lidl' : '') + '. Îl poți adăuga ca aliment propriu, cu valorile de pe etichetă.</p>';
+    return (all ? '<div class="me-shoplist">' : '') + res.map(function (x) { return '<button type="button" class="me-res" data-add="' + mi + ':' + esc(x.id) + '"><span>' + esc(fname(x).replace(/ \(Lidl\)$/, '')) + shopTag(x) + '</span><small>' + R(x.kcal) + ' kcal · ' + R(x.p) + ' P · ' + R(x.c) + ' C · ' + R(x.f) + ' G la 100 g</small></button>'; }).join('') + (all ? '</div>' : '');
   }
+  function shopTag(x) { return x && x.shop === 'lidl' ? ' <span class="me-lidl">Lidl</span>' : ''; }
+  function shopBtn() { return '<button type="button" class="me-shop' + (E.shop ? ' on' : '') + '" data-shop="1" aria-pressed="' + !!E.shop + '">Doar Lidl</button>'; }
   function ownFormHtml(mi) {
     return '<div class="me-own"><p class="small" style="margin:0 0 8px"><b>Aliment propriu</b> <span class="muted">(valori la 100 g, de pe etichetă)</span></p>' +
       '<div class="field"><input id="meOwnN" type="text" maxlength="80" placeholder="Numele alimentului, ex.: Proteină whey Brand X"></div>' +
@@ -109,7 +111,7 @@
       }).join('') + '</ul>' : '<p class="muted small" style="margin:6px 0 10px">Încă niciun aliment. Caută mai jos.</p>') +
       '<div class="me-tot" id="meTot_' + mi + '">' + mealTotHtml(mi) + '</div>' +
       (m.items.length ? '<div class="row" style="margin:8px 0 10px"><button type="button" class="btn btn-ghost btn-sm" data-fit="' + mi + '">Potrivește gramajele la țintă</button></div>' : '') +
-      '<div class="field" style="margin-bottom:6px"><input type="search" class="me-q" data-q="' + mi + '" autocomplete="off" placeholder="+ Adaugă aliment (ex. orez)" value="' + esc(s.q || '') + '"></div>' +
+      '<div class="field me-qrow" style="margin-bottom:6px"><input type="search" class="me-q" data-q="' + mi + '" autocomplete="off" placeholder="' + (E.shop ? 'Caută în produsele Lidl' : '+ Adaugă aliment (ex. orez)') + '" value="' + esc(s.q || '') + '">' + shopBtn() + '</div>' +
       '<div id="meRes_' + mi + '">' + resultsHtml(mi) + '</div>' +
       (E.ownFor === mi ? ownFormHtml(mi) : '<button type="button" class="linkbtn small" data-own="' + mi + '">+ Aliment care nu e în listă</button>') +
       '<details class="me-note"' + (m.note ? ' open' : '') + '><summary>Indicații pentru client</summary><textarea data-note="' + mi + '" maxlength="400" rows="2" placeholder="ex.: Orezul se cântărește crud. Puiul la grătar, fără ulei în plus.">' + esc(m.note) + '</textarea></details>' +
@@ -127,6 +129,10 @@
       pc: 'tofu tempeh linte_fiarta ou quinoa orez_brun bulgur cartofi_dulci broccoli spanac ardei rosii ulei_masline avocado',
       md: 'ou iaurt_gr skyr ovaz paine_int banana fructe_padure unt_arahide',
       g: 'iaurt_gr branza_vaci mar capsuni nuci' }],
+    ['lidl', 'Doar Lidl', {
+      pc: 'l_piept_pui l_somon l_ton_file l_tofu l_orez_bob_lung l_quinoa l_spaghete l_fusilli cartofi l_mix_legume l_spanac l_legume_italiene l_fasole_pastai salata rosii l_ulei_floarea',
+      md: 'l_skyr l_cottage_light l_branza_vaci ou l_ovaz l_musli banana fructe_padure l_migdale',
+      g: 'l_hp_drink_vanilie l_hp_drink_cafea l_skyr l_piept_pui_afumat l_beef_jerky mar l_nuci' }],
     ['fl', 'Fără lactoză', {
       pc: 'piept_pui piept_curcan vita_slaba somon cod orez_basmati cartofi quinoa paste_int broccoli fasole_verde salata rosii ulei_masline',
       md: 'ou albus ovaz lapte_fl iaurt_gr_fl paine_int banana fructe_padure migdale',
@@ -142,18 +148,18 @@
     ids.forEach(function (id) { var x = foods[id]; if (x) (groups[G.poolKind(x)] = groups[G.poolKind(x)] || []).push(x); });
     var h = G.POOL_KINDS.filter(function (k) { return groups[k[0]]; }).map(function (k) {
       return '<div class="me-pgroup"><span class="me-plabel">' + k[1] + '</span>' + groups[k[0]].map(function (x) {
-        return '<span class="me-chip">' + esc(fname(x)) + (del ? '<button type="button" data-pdel="' + esc(x.id) + '" aria-label="Scoate ' + esc(fname(x)) + '">×</button>' : '') + '</span>';
+        return '<span class="me-chip">' + esc(fname(x).replace(/ \(Lidl\)$/, '')) + shopTag(x) + (del ? '<button type="button" data-pdel="' + esc(x.id) + '" aria-label="Scoate ' + esc(fname(x)) + '">×</button>' : '') + '</span>';
       }).join('') + '</div>';
     }).join('');
     return h || '<p class="muted small" style="margin:6px 0">Niciun aliment ales încă.</p>';
   }
   function poolResultsHtml() {
-    var q0 = (E.search.pool || '').trim(); if (q0.length < 2) return '';
+    var q0 = (E.search.pool || '').trim(), all = E.shop && q0.length < 2; if (!E.shop && q0.length < 2) return '';
     var list = E.draft.pool[E.draft.tab], own = Object.keys(E.draft.foods).map(function (k) { return E.draft.foods[k]; });
     var norm = function (x) { return x.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
-    var res = own.filter(function (x) { return norm(x.name).indexOf(norm(q0)) >= 0; }).concat(G.searchFoods(E.content, q0, 10)).filter(function (x) { return list.indexOf(x.id) < 0; }).slice(0, 8);
-    if (!res.length) return '<p class="muted small" style="margin:6px 0">Nu am găsit „' + esc(q0) + '” (sau e deja în listă). Îl poți adăuga ca aliment propriu.</p>';
-    return res.map(function (x) { return '<button type="button" class="me-res" data-padd="' + esc(x.id) + '"><span>' + esc(fname(x)) + '</span><small>' + R(x.kcal) + ' kcal · ' + R(x.p) + ' P · ' + R(x.c) + ' C · ' + R(x.f) + ' G la 100 g</small></button>'; }).join('');
+    var res = (E.shop || q0.length < 2 ? [] : own.filter(function (x) { return norm(x.name).indexOf(norm(q0)) >= 0; })).concat(G.searchFoods(E.content, q0, all ? 200 : 10, { shop: E.shop })).filter(function (x) { return list.indexOf(x.id) < 0; }).slice(0, all ? 200 : 8);
+    if (!res.length) return '<p class="muted small" style="margin:6px 0">' + (all ? 'Toate produsele Lidl sunt deja în listă.' : 'Nu am găsit „' + esc(q0) + '”' + (E.shop ? ' printre produsele Lidl' : '') + ' (sau e deja în listă). Îl poți adăuga ca aliment propriu.') + '</p>';
+    return (all ? '<div class="me-shoplist">' : '') + res.map(function (x) { return '<button type="button" class="me-res" data-padd="' + esc(x.id) + '"><span>' + esc(fname(x).replace(/ \(Lidl\)$/, '')) + shopTag(x) + '</span><small>' + R(x.kcal) + ' kcal · ' + R(x.p) + ' P · ' + R(x.c) + ' C · ' + R(x.f) + ' G la 100 g</small></button>'; }).join('') + (all ? '</div>' : '');
   }
   function previewHtml(menu, seed) {
     var plan;
@@ -180,7 +186,7 @@
       }).join('') + '</div><div class="me-pool">';
     if (d.tab !== 'pc' && !list.length) h += '<p class="small" style="margin:0 0 8px">Lista e goală, așa că la ' + (d.tab === 'md' ? 'micul dejun' : 'gustări') + ' se folosesc alimentele ' + (d.tab === 'g' && d.pool.md.length ? 'de la micul dejun' : 'de la prânz și cină') + '. <button type="button" class="linkbtn small" data-pcopy="1">Copiază-le aici ca să le modifici</button></p>';
     h += chipsHtml(list, allFoods, true) +
-      '<div class="field" style="margin:10px 0 6px"><input type="search" class="me-q" data-pq="1" autocomplete="off" placeholder="+ Adaugă aliment (ex. orez, pui, iaurt)" value="' + esc(E.search.pool || '') + '"></div>' +
+      '<div class="field me-qrow" style="margin:10px 0 6px"><input type="search" class="me-q" data-pq="1" autocomplete="off" placeholder="' + (E.shop ? 'Caută în produsele Lidl' : '+ Adaugă aliment (ex. orez, pui, iaurt)') + '" value="' + esc(E.search.pool || '') + '">' + shopBtn() + '</div>' +
       '<div id="mePRes">' + poolResultsHtml() + '</div>' +
       (E.ownFor === 'p' ? ownFormHtml('p') : '<button type="button" class="linkbtn small" data-own="p">+ Aliment care nu e în listă</button>') + '</div>';
     h += '<h3 style="margin:18px 0 4px">Exemplu de săptămână</h3><p class="muted small" style="margin:0 0 8px">Așa arată mesele pe ' + E.targets.kcal + ' kcal. Clientul primește în fiecare săptămână altă combinație, din aceleași alimente.</p>' +
@@ -313,6 +319,14 @@
       }
       var sg = t.closest('[data-meseg] button');
       if (sg) { setMealCount(+sg.getAttribute('data-v')); E.search = {}; return render(); }
+      var shb = t.closest('[data-shop]');
+      if (shb) {
+        var inMeal = shb.closest('.me-meal'), mIdx = inMeal ? [].indexOf.call(root.querySelectorAll('.me-meal'), inMeal) : -1;
+        E.shop = E.shop ? null : 'lidl'; E.shopFocus = mIdx; render();
+        var qi = mIdx >= 0 ? root.querySelector('[data-q="' + mIdx + '"]') : root.querySelector('[data-pq]');
+        if (qi) { if (mIdx >= 0) { E.search[mIdx] = E.search[mIdx] || { q: '' }; var rb = el('meRes_' + mIdx); if (rb) rb.innerHTML = resultsHtml(mIdx); } qi.focus(); }
+        return;
+      }
       var md = t.closest('[data-memode] button');
       if (md) { E.draft.mode = md.getAttribute('data-v'); E.search = {}; E.ownFor = null; return render(); }
       var tb = t.closest('[data-ptab]');
@@ -368,7 +382,7 @@
     root.oninput = function (e) {
       var t = e.target;
       if (t.hasAttribute('data-pq')) { E.search.pool = t.value; var pr2 = el('mePRes'); if (pr2) pr2.innerHTML = poolResultsHtml(); return; }
-      if (t.hasAttribute('data-q')) { var mi = +t.getAttribute('data-q'); E.search[mi] = { q: t.value }; var r = el('meRes_' + mi); if (r) r.innerHTML = resultsHtml(mi); return; }
+      if (t.hasAttribute('data-q')) { var mi = +t.getAttribute('data-q'); E.search[mi] = { q: t.value }; E.shopFocus = mi; var r = el('meRes_' + mi); if (r) r.innerHTML = resultsHtml(mi); return; }
       if (t.hasAttribute('data-g')) {
         var p = t.getAttribute('data-g').split(':').map(Number), it = E.draft.meals[p[0]].items[p[1]];
         it.g = num(t.value) || 0;
