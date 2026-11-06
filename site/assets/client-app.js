@@ -23,7 +23,7 @@
     ['Leguminoase', function (f) { return f.cat === 'Leguminoase'; }]
   ];
 
-  var MP = { content: null, db: null, food: {}, recipe: {}, profile: null, targets: null, row: null, plan: null, day: 0, open: null, flash: '', banner: '', edit: false, alts: [], weights: [], trainer: null, me: null, menu: null };
+  var MP = { content: null, db: null, food: {}, recipe: {}, profile: null, targets: null, row: null, plan: null, day: 0, open: null, flash: '', banner: '', edit: false, alts: [], weights: [], trainer: null, me: null, menu: null, water: {}, waterErr: false };
   function fname(id) { return (MP.food[id] ? MP.food[id].name : id).replace(/ \(1 .*?\)$/, ''); }
   function mpQ(seed) { var a = MP.profile.answers; return Object.assign({}, a, { exclude: (a.exclude || []).slice(), seed: seed }); }
   function T0() { var t = MP.targets; return { kcal: t.kcal, p: t.p, c: t.c, f: t.f }; }
@@ -132,9 +132,11 @@
         sb.from('meal_profiles').select('*').maybeSingle(),
         sb.from('client_targets').select('*').maybeSingle(),
         sb.from('body_weights').select('id,measured_on,weight_kg').order('measured_on', { ascending: true }).limit(2000),
-        sb.from('client_menus').select('*').maybeSingle()
+        sb.from('client_menus').select('*').maybeSingle(),
+        sb.from('water_logs').select('day,ml').gte('day', addDays(today(), -14))
       ]);
       var err = q.find(function (x) { return x.error; }); if (err) throw err.error;
+      MP.water = {}; (q[5].data || []).forEach(function (x) { MP.water[x.day] = x.ml; });
       MP.content = q[0].data.data; MP.db = G.prepare(MP.content);
       MP.content.foods.forEach(function (f) { MP.food[f.id] = f; });
       MP.content.recipes.forEach(function (r) { MP.recipe[r.id] = r; });
@@ -169,6 +171,7 @@
       var q = await Promise.all([sb.from('client_targets').select('*').maybeSingle(), sb.from('client_menus').select('*').maybeSingle()]);
       if (q[0].error || q[1].error) return;
       var nt = q[0].data || null, nm = q[1].data || null;
+      if (nt && MP.targets && nt.water_ml !== MP.targets.water_ml) { MP.targets.water_ml = nt.water_ml; if (!MP.open) render(); }
       var changed = !!nt !== !!MP.targets || (nt && !sameTargets(nt, MP.targets)) || G.menuKey(nm) !== G.menuKey(MP.menu) || (!!nm && !!MP.menu && nm.locked !== MP.menu.locked);
       if (!changed) return;
       MP.targets = nt; MP.menu = nm;
@@ -292,7 +295,7 @@
   function entriesTotal(list) { return list.reduce(function (a, e) { return { kcal: a.kcal + e.kcal, p: a.p + e.p, c: a.c + e.c, f: a.f + e.f, fib: a.fib + (e.fib || 0) }; }, { kcal: 0, p: 0, c: 0, f: 0, fib: 0 }); }
   function doneMealHtml(m, mi) {
     var st = m.status, at = st === 'other' ? entriesTotal(m.actual || []) : m.macros;
-    return '<article class="card mp-meal is-done"><div class="mp-mhead"><div><div class="mp-slot">' + esc(m.slot) + '</div><h3>' + esc(m.name || m.recipe.name) + '</h3></div><span class="mp-badge' + (st === 'skipped' ? ' skip' : st === 'other' ? ' oth' : '') + '">' + (st === 'eaten' ? 'Mâncat ✓' : st === 'skipped' ? 'Sărit' : 'Am mâncat altceva') + '</span></div>' +
+    return '<article class="card mp-meal is-done c' + (mi % 4) + '"><div class="mp-mhead"><div><div class="mp-slot">' + esc(m.slot) + '</div><h3>' + esc(m.name || m.recipe.name) + '</h3></div><span class="mp-badge' + (st === 'skipped' ? ' skip' : st === 'other' ? ' oth' : '') + '">' + (st === 'eaten' ? 'Mâncat ✓' : st === 'skipped' ? 'Sărit' : 'Am mâncat altceva') + '</span></div>' +
       (st === 'other' ? '<ul class="mp-list">' + (m.actual || []).map(function (e) { return '<li><span>' + esc(e.name) + (e.g ? ' · ' + R(e.g) + ' g' : '') + '</span><span>' + R(e.kcal) + ' kcal</span></li>'; }).join('') + '</ul>' : '') +
       (st !== 'skipped' ? '<div style="margin-top:8px">' + nutHtml(at) + '</div>' : '') +
       '<div class="mp-tools"><button type="button" data-undo="' + mi + '">Anulează</button></div></article>';
@@ -423,6 +426,44 @@
   }
   function dayDone(t) { MP.flash = dayFlash(t, MP.plan.targets); MP.open = null; stopCamera(); mpSave(); render(); }
 
+  // ---------- apa ----------
+  function waterGoal() {
+    if (MP.targets && MP.targets.water_ml) return MP.targets.water_ml;
+    var w = MP.weights.length ? +MP.weights[MP.weights.length - 1].weight_kg : null;
+    return w ? Math.min(4000, Math.max(1500, Math.round(w * 35 / 250) * 250)) : 2000;
+  }
+  function litri(ml) { return String(Math.round(ml / 10) / 100).replace('.', ','); }
+  function waterHtml(ds) {
+    var t = today();
+    if (ds > t || ds < addDays(t, -14)) return '';
+    var goal = waterGoal(), ml = MP.water[ds] || 0, n = Math.min(16, Math.ceil(goal / 250)), full = Math.floor(ml / 250);
+    var pct = Math.min(100, ml / goal * 100), done = ml >= goal;
+    var cups = '';
+    for (var i = 0; i < n; i++) cups += '<button type="button" class="mp-cup' + (i < full ? ' on' : '') + '" data-wset="' + ((i + 1) * 250) + '" aria-label="' + litri((i + 1) * 250) + ' litri"><svg viewBox="0 0 24 28" aria-hidden="true"><path d="M3 3h18l-2.2 21.2A2 2 0 0 1 16.8 26H7.2a2 2 0 0 1-2-1.8L3 3z"/><path class="w" d="M4.6 11h14.8l-1.6 13.2A1 1 0 0 1 16.8 25H7.2a1 1 0 0 1-1-.9L4.6 11z"/></svg></button>';
+    return '<section class="card mp-water' + (done ? ' is-done' : '') + '" aria-label="Apă băută">' +
+      '<div class="mp-whead"><div><h3>💧 Apă' + (ds === t ? ' azi' : '') + '</h3><span>' + (done ? 'Ai atins ținta de ' + litri(goal) + ' L. Bravo!' : 'Ținta ta: ' + litri(goal) + ' L pe zi' + (MP.targets && MP.targets.water_ml ? ', de la ' + esc(MP.trainer.display_name) : '')) + '</span></div>' +
+      '<b class="mp-wv">' + litri(ml) + '<small> / ' + litri(goal) + ' L</small></b></div>' +
+      '<div class="mp-wbar" role="img" aria-label="' + litri(ml) + ' din ' + litri(goal) + ' litri"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="mp-cups">' + cups + '</div>' +
+      '<div class="mp-wbtns"><button type="button" data-water="-250" aria-label="Scade un pahar"' + (ml ? '' : ' disabled') + '>−</button><button type="button" class="main" data-water="250">+ un pahar <small>250 ml</small></button><button type="button" class="main" data-water="500">+ o sticlă <small>500 ml</small></button></div>' +
+      (MP.waterErr ? '<p class="mp-werr">Ultima modificare nu s-a salvat. Verifică internetul și mai apasă o dată.</p>' : '') +
+      '</section>';
+  }
+  var waterT = null, waterPending = {};
+  function setWater(ds, ml) {
+    ml = Math.max(0, Math.min(10000, ml));
+    MP.water[ds] = ml; waterPending[ds] = ml; MP.waterErr = false;
+    var box = document.querySelector('.mp-water');
+    if (box) box.outerHTML = waterHtml(ds);
+    clearTimeout(waterT);
+    waterT = setTimeout(async function () {
+      var rows = Object.keys(waterPending).map(function (d) { return { client_id: MP.me.id, day: d, ml: waterPending[d], updated_at: new Date().toISOString() }; });
+      waterPending = {};
+      var r = await sb.from('water_logs').upsert(rows, { onConflict: 'client_id,day' });
+      if (r.error) { rows.forEach(function (x) { waterPending[x.day] = x.ml; }); MP.waterErr = true; var bx = document.querySelector('.mp-water'); if (bx && typeof MP.day === 'number') bx.outerHTML = waterHtml(addDays(MP.row.week_start, MP.day)); }
+    }, 700);
+  }
+
   function planHtml() {
     var p = MP.plan, T = p.targets, prof = MP.profile, t = today();
     var h = '<div class="mp-tiles"><div class="mp-tile t-kcal"><b>' + T.kcal + '</b><span>kcal pe zi</span></div><div class="mp-tile t-p"><b>' + T.p + ' g</b><span>proteine</span></div><div class="mp-tile t-c"><b>' + T.c + ' g</b><span>carbohidrați</span></div><div class="mp-tile t-f"><b>' + T.f + ' g</b><span>grăsimi</span></div></div>';
@@ -442,11 +483,12 @@
       var d = p.days[MP.day];
       h += '<h2 class="mp-dayname">' + dayName(addDays(MP.row.week_start, MP.day)) + '</h2>';
       h += todayHtml(d, T);
+      h += waterHtml(addDays(MP.row.week_start, MP.day));
       d.meals.forEach(function (m, mi) {
         var op = MP.open;
         if (m.status) { h += doneMealHtml(m, mi); return; }
         var steps = stepsOf(m);
-        h += '<article class="card mp-meal"><div class="mp-mhead"><div><div class="mp-slot">' + esc(m.slot) + (m.recipe.min ? ' · ' + m.recipe.min + ' min' : '') + '</div><h3>' + esc(m.name || m.recipe.name) + '</h3>' + (m.changed ? '<div class="mp-recalc">Recalculată: ' + (m.changed > 0 ? '+' : '−') + R(Math.abs(m.changed)) + ' kcal față de plan</div>' : '') + '</div></div>' + nutHtml(m.macros) +
+        h += '<article class="card mp-meal c' + (mi % 4) + '"><div class="mp-mhead"><div><div class="mp-slot">' + esc(m.slot) + (m.recipe.min ? ' · ' + m.recipe.min + ' min' : '') + '</div><h3>' + esc(m.name || m.recipe.name) + '</h3>' + (m.changed ? '<div class="mp-recalc">Recalculată: ' + (m.changed > 0 ? '+' : '−') + R(Math.abs(m.changed)) + ' kcal față de plan</div>' : '') + '</div></div>' + nutHtml(m.macros) +
           '<ul class="mp-ing' + (LOCK ? ' is-locked' : '') + '">' + m.items.map(function (it, ii) { var on = op && op.t === 'ing' && op.mi === mi && op.ii === ii; if (LOCK) return '<li><span>' + esc(it.name) + '</span><span>' + (it.label ? esc(it.label) + ' · ' : '') + it.g + ' g</span></li>'; return '<li><button type="button" data-ing="' + mi + ':' + ii + '" class="' + (on ? 'is-on' : '') + '" aria-expanded="' + !!on + '"><span>' + esc(it.name) + '</span><span>' + (it.label ? esc(it.label) + ' · ' : '') + it.g + ' g</span></button></li>'; }).join('') + '</ul>' +
           (m.swaps ? '<p class="mp-swapped">Înlocuit: ' + m.swaps.map(esc).join(', ') + '</p>' : '') +
           boxHtml(m, mi) +
@@ -474,6 +516,8 @@
       var xc = t.closest('#mpExcl .mp-chip'); if (xc) { xc.classList.toggle('is-on'); return; }
       var lm = t.closest('[data-seg="logmode"] button');
       if (lm) { stopCamera(); MP.log.mode = lm.getAttribute('data-v'); MP.log.scanning = false; return render(); }
+      var wa = t.closest('[data-water]'); if (wa) { var wds = addDays(MP.row.week_start, MP.day); return setWater(wds, (MP.water[wds] || 0) + (+wa.getAttribute('data-water'))); }
+      var wsb = t.closest('[data-wset]'); if (wsb) { var wds2 = addDays(MP.row.week_start, MP.day), v = +wsb.getAttribute('data-wset'); return setWater(wds2, (MP.water[wds2] || 0) === v ? v - 250 : v); }
       var wb = t.closest('[data-w]'); if (wb) return saveWeight(wb);
       var wd = t.closest('[data-wdel]'); if (wd) return delWeight(+wd.getAttribute('data-wdel'));
       var di = MP.day;

@@ -152,10 +152,41 @@
     h += '<section class="card"><h2>Preferințele clientului</h2>' + prefsHtml() + '</section>';
     h += '<section class="card"><h2>Calculator</h2><p class="muted small">Precompletat cu datele clientului. Poți schimba orice: calculul de aici e doar un punct de plecare.</p>' + calcHtml() + '</section>';
     h += '<section class="card"><h2>Caloriile și macro-urile clientului</h2>' + editorHtml() +
+      waterFieldHtml() +
       '<p id="teMsg" class="msg" hidden></p><button type="button" class="btn btn-block" data-act="save">' + (t ? 'Salvează și refă planul clientului' : 'Salvează și trimite planul') + '</button>' +
       '<p class="muted small" style="margin:10px 0 0">Clientul primește planul pe noile cifre data viitoare când deschide contul.</p></section>';
     $('tcMain').innerHTML = h;
     $('teOut').innerHTML = outHtml();
+  }
+
+  // ---------------- apa ----------------
+  function autoWater() {
+    var w = num(S.inp.weight);
+    return w ? Math.min(4000, Math.max(1500, Math.round(w * 35 / 250) * 250)) : 2000;
+  }
+  function litri(ml) { return String(Math.round(ml / 10) / 100).replace('.', ','); }
+  function waterFieldHtml() {
+    var cur = S.targets && S.targets.water_ml;
+    return '<div class="water-field"><div class="field" style="margin:0"><label for="teWater">💧 Apă pe zi (litri)</label>' +
+      '<input id="teWater" type="text" inputmode="decimal" autocomplete="off" placeholder="' + litri(autoWater()) + '" value="' + (cur ? litri(cur) : '') + '"></div>' +
+      '<p class="muted small" style="margin:6px 0 0">Gol = calculat automat: 35 ml pe kg corp (' + litri(autoWater()) + ' L acum). Clientul bifează paharele în aplicație.</p></div>';
+  }
+  function waterHistHtml() {
+    var goal = (S.targets && S.targets.water_ml) || autoWater(), days = [], d0 = new Date();
+    for (var i = 13; i >= 0; i--) { var d = new Date(d0.getTime() - i * 864e5 - d0.getTimezoneOffset() * 60000).toISOString().slice(0, 10); days.push({ d: d, ml: S.water[d] || 0 }); }
+    var logged = days.slice(0, 13).filter(function (x) { return x.ml > 0; }).slice(-7);
+    var avg = logged.length ? logged.reduce(function (a, x) { return a + x.ml; }, 0) / logged.length : 0;
+    var max = Math.max(goal, Math.max.apply(null, days.map(function (x) { return x.ml; })));
+    var bars = days.map(function (x) {
+      var h = Math.round(x.ml / max * 100), ok = x.ml >= goal;
+      return '<div class="wh-col" title="' + App.fmtDate(x.d + 'T12:00:00Z') + ': ' + litri(x.ml) + ' L"><div class="wh-bar"><i class="' + (ok ? 'ok' : x.ml ? 'mid' : '') + '" style="height:' + h + '%"></i></div><span>' + new Date(x.d + 'T12:00:00Z').getUTCDate() + '</span></div>';
+    }).join('');
+    return '<section class="card"><h2>💧 Apă</h2>' +
+      (days.some(function (x) { return x.ml > 0; })
+        ? '<p class="muted small" style="margin:0 0 10px">Ținta: <b>' + litri(goal) + ' L</b> pe zi' + (logged.length ? ' · media pe zilele notate: <b>' + litri(avg) + ' L</b> (' + Math.round(avg / goal * 100) + '% din țintă)' : '') + '</p>' +
+          '<div class="wh" role="img" aria-label="Apa băută în ultimele 14 zile">' + '<div class="wh-goal" style="bottom:' + Math.round(22 + goal / max * 90) + 'px"><span>' + litri(goal) + ' L</span></div>' + bars + '</div>'
+        : '<p class="muted small" style="margin:0">Clientul nu și-a notat încă apa. Ținta lui: ' + litri(goal) + ' L pe zi.</p>') +
+      '</section>';
   }
 
   function rerenderOut() { var o = $('teOut'); if (o) o.innerHTML = outHtml(); }
@@ -204,15 +235,18 @@
     readInputs();
     var r = compute(), m = $('teMsg');
     if (r.errs.length) { App.msg(m, r.errs[0]); return; }
+    var wv = $('teWater') ? String($('teWater').value).trim() : '', wml = null;
+    if (wv) { var wl = num(wv); if (!(wl >= 0.5 && wl <= 6)) { App.msg(m, 'Apa pe zi trebuie să fie între 0,5 și 6 litri (sau lasă gol pentru calcul automat).'); return; } wml = Math.round(wl * 1000 / 50) * 50; }
     btn.disabled = true; App.msg(m, '');
     var row = {
-      client_id: S.client.id, kcal: r.t.kcal, p: r.t.p, c: r.t.c, f: r.t.f, set_by: S.me.id, updated_at: new Date().toISOString(),
+      client_id: S.client.id, kcal: r.t.kcal, p: r.t.p, c: r.t.c, f: r.t.f, set_by: S.me.id, updated_at: new Date().toISOString(), water_ml: wml,
       calc: { mode: S.ed.mode, input: { sex: S.inp.sex, age: num(S.inp.age), height: num(S.inp.height), weight: num(S.inp.weight), activity: S.inp.activity, goal: S.inp.goal } }
     };
     var res = await sb.from('client_targets').upsert(row, { onConflict: 'client_id' }).select('*').single();
     btn.disabled = false;
     if (res.error) return App.msg(m, App.ro(res.error));
     S.targets = res.data; S.lastGood = r.t;
+    if ($('tcWater')) $('tcWater').innerHTML = waterHistHtml();
     if (S.onSaved) S.onSaved(S.client.id, res.data);
     if (window.MenuEditor) MenuEditor.setTargets(res.data);
     render();
@@ -248,7 +282,8 @@
       sb.from('client_targets').select('*').eq('client_id', client.id).maybeSingle(),
       sb.from('target_proposals').select('*').eq('client_id', client.id).order('created_on', { ascending: false }).limit(10),
       sb.from('body_weights').select('measured_on,weight_kg').eq('user_id', client.id).order('measured_on', { ascending: true }).limit(400),
-      sb.rpc('trainer_overview')
+      sb.rpc('trainer_overview'),
+      sb.from('water_logs').select('day,ml').eq('client_id', client.id).gte('day', new Date(Date.now() - 15 * 864e5).toISOString().slice(0, 10))
     ]);
     var err = q.find(function (x) { return x.error; });
     if (err) { root.innerHTML = '<div class="card"><p class="msg">' + esc(App.ro(err.error)) + '</p><button class="btn btn-ghost btn-sm" data-act="back">← Înapoi</button></div>'; root.onclick = function (e) { if (e.target.closest('[data-act=back]')) onBack(); }; return; }
@@ -257,7 +292,7 @@
     var lastW = ws.length ? +ws[ws.length - 1].weight_kg : null;
     S = {
       me: me, client: client, onBack: onBack, onSaved: onSaved,
-      profile: q[0].data, targets: t, proposals: q[2].data || [], weights: ws,
+      profile: q[0].data, targets: t, proposals: q[2].data || [], weights: ws, water: (q[5].data || []).reduce(function (o, x) { o[x.day] = x.ml; return o; }, {}),
       ov: ((q[4] && q[4].data) || []).find(function (x) { return x.client_id === client.id; }) || null,
       inp: {
         sex: a.sex || (calcIn && calcIn.sex) || 'm',
@@ -276,7 +311,7 @@
     var inactive = me.billing && me.billing.active === false;
     Chat.mount($('tcChat'), { clientId: client.id, asTrainer: true, otherName: client.full_name, readOnly: inactive ? 'Ca să-i scrii clientului, alege un abonament (proba sau abonamentul s-au încheiat).' : null });
     // evoluția: graficul greutății și check-in-urile (se desenează o singură dată)
-    $('tcEvo').innerHTML = '<section class="card"><h2>Greutate</h2>' + (ws.length ? App.lineChart(ws.map(function (x) { return { d: x.measured_on, v: +x.weight_kg }; }), 'kg', 'Greutatea clientului') : '<p class="muted small" style="margin:0">Clientul nu și-a notat încă greutatea.</p>') + '</section><div id="tcCk"></div>';
+    $('tcEvo').innerHTML = '<section class="card"><h2>Greutate</h2>' + (ws.length ? App.lineChart(ws.map(function (x) { return { d: x.measured_on, v: +x.weight_kg }; }), 'kg', 'Greutatea clientului') : '<p class="muted small" style="margin:0">Clientul nu și-a notat încă greutatea.</p>') + '</section><div id="tcWater">' + waterHistHtml() + '</div><div id="tcCk"></div>';
     Checkin.mountTrainer($('tcCk'), client.id);
     window.scrollTo(0, 0);
   }

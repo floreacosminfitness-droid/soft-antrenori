@@ -126,3 +126,63 @@
 .mp-box > p.hint { font-weight: 400; }
 .mp-ing.is-locked li { display: flex; justify-content: space-between; gap: 10px; padding: 10px 2px; border-bottom: 1px solid var(--line); }
 .mp-ing.is-locked li span:last-child { color: var(--muted); white-space: nowrap; }
+
+/* ---- culoare (aceeași paletă ca pe Instagram) ---- */
+:root {
+  --c-blue: #2448FF; --c-lime: #D9FF5B; --c-mint: #9EE6C1; --c-lilac: #C7B8FF; --c-yellow: #FFD84D; --c-pink: #FFB8D2;
+  --w: #2f6fdb; --w-soft: #eaf1ff;
+}
+.mp-tile { border: 0; }
+.mp-tile.t-kcal { background: #f2fdd0; }
+.mp-tile.t-p { background: #e6eeff; }
+.mp-tile.t-c { background: #fff0db; }
+.mp-tile.t-f { background: #ffe7e4; }
+.mp-tile span { color: #55534e; }
+
+.mp-days button.today { border-color: var(--c-blue); }
+.mp-days button.is-on { background: var(--c-blue); border-color: var(--c-blue); }
+.mp-days button.today:not(.is-on)::after { content: ''; display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--c-blue); margin: 3px auto 0; }
+
+.mp-banner { background: #efeaff; }
+.mp-meal { border-top: 5px solid var(--line); }
+.mp-meal.c0 { border-top-color: var(--c-yellow); }
+.mp-meal.c1 { border-top-color: var(--c-mint); }
+.mp-meal.c2 { border-top-color: var(--c-lilac); }
+.mp-meal.c3 { border-top-color: var(--c-pink); }
+.mp-meal .mp-slot { display: inline-block; padding: 3px 9px; border-radius: 99px; background: var(--soft); color: #3b3a36; font-weight: 600; }
+.mp-meal.c0 .mp-slot { background: #fff3c4; } .mp-meal.c1 .mp-slot { background: #dcf6e8; }
+.mp-meal.c2 .mp-slot { background: #ebe5ff; } .mp-meal.c3 .mp-slot { background: #ffe3ee; }
+.mp-badge { background: #dcf6e8; color: #17603a; }
+.mp-eat button.main { background: var(--accent); }
+.mp-extra button { border-style: dashed; }
+.mp-shop h4::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--c-blue); margin-right: 8px; vertical-align: 1px; }
+.mp-shop h4:nth-of-type(4n+2)::before { background: #e5a800; } .mp-shop h4:nth-of-type(4n+3)::before { background: #2fa36b; } .mp-shop h4:nth-of-type(4n+4)::before { background: #8a6cff; }
+
+/* ---- apa ---- */
+.mp-water { margin-top: 12px; background: var(--w-soft); border-color: #d4e3ff; }
+.mp-water.is-done { background: #e4f7ec; border-color: #bfe8cf; }
+.mp-whead { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.mp-whead h3 { margin: 0; font-size: 1.05rem; }
+.mp-whead span { font-size: .82rem; color: #4b5a78; }
+.mp-water.is-done .mp-whead span { color: #17603a; font-weight: 600; }
+.mp-wv { font-size: 1.5rem; line-height: 1; color: var(--w); white-space: nowrap; }
+.mp-wv small { font-size: .85rem; color: #4b5a78; font-weight: 500; }
+.mp-wbar { height: 10px; border-radius: 99px; background: #fff; overflow: hidden; margin: 12px 0 10px; }
+.mp-wbar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #6aa2ff, var(--w)); transition: width .25s; }
+.mp-water.is-done .mp-wbar i { background: linear-gradient(90deg, #5fcf8f, #2fa36b); }
+.mp-cups { display: flex; gap: 2px; }
+.mp-cup { flex: 1 1 0; min-width: 0; max-width: 34px; height: 36px; padding: 2px; border: 0; background: none; cursor: pointer; border-radius: 8px; }
+.mp-cup:hover { background: rgba(47,111,219,.08); }
+.mp-cup svg { width: 100%; height: 100%; }
+.mp-cup svg path { fill: #fff; stroke: #a9c4f5; stroke-width: 1.4; }
+.mp-cup svg path.w { fill: transparent; stroke: none; }
+.mp-cup.on svg path { stroke: var(--w); }
+.mp-cup.on svg path.w { fill: #6aa2ff; }
+.mp-wbtns { display: flex; gap: 6px; margin-top: 12px; }
+.mp-wbtns button { flex: 1; border: 1px solid #c9dafa; background: #fff; border-radius: 10px; padding: 9px 8px; font: inherit; font-weight: 600; font-size: .88rem; cursor: pointer; color: #1f3f86; line-height: 1.15; }
+.mp-wbtns button small { display: block; font-weight: 400; font-size: .72rem; color: #4b5a78; }
+.mp-wbtns button.main { background: var(--w); border-color: var(--w); color: #fff; }
+.mp-wbtns button.main small { color: rgba(255,255,255,.85); }
+.mp-wbtns button:first-child { flex: 0 0 48px; font-size: 1.2rem; }
+.mp-wbtns button:disabled { opacity: .4; cursor: default; }
+.mp-werr { margin: 10px 0 0; font-size: .85rem; color: var(--danger); }

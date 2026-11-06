@@ -341,3 +341,24 @@ textarea { width: 100%; padding: 12px 14px; font: inherit; color: inherit; borde
 .me-shop.on { background: #0050aa; border-color: #0050aa; color: #fff; }
 .me-lidl { display: inline-block; vertical-align: 1px; margin-left: 4px; padding: 1px 6px; border-radius: 5px; background: #0050aa; color: #fff7d1; font-size: .66rem; font-weight: 700; letter-spacing: .02em; }
 .me-shoplist { max-height: 340px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; padding: 4px; }
+
+/* ---- culoare (aceeași paletă ca pe Instagram) ---- */
+.av { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; font-size: .72rem; font-weight: 700; margin-right: 10px; vertical-align: middle; color: #141414; letter-spacing: .02em; }
+.av0 { background: #D9FF5B; } .av1 { background: #9EE6C1; } .av2 { background: #C7B8FF; }
+.av3 { background: #FFD84D; } .av4 { background: #FFB8D2; } .av5 { background: #a9bcff; }
+.stats { gap: 10px; }
+.stats .stat { padding: 10px 16px; border-radius: 12px; min-width: 96px; }
+.stats .stat:first-child { background: #f2fdd0; }
+.stats .stat:nth-child(2) { background: #efeaff; }
+.badge-water { background: #eaf1ff; color: #1f3f86; }
+.badge-water.low { background: #fff4e0; color: #7a4d00; }
+.pill-ok { background: #dcf6e8; color: #17603a; }
+.water-field { background: #eaf1ff; border-radius: 12px; padding: 12px 14px; margin: 14px 0 12px; }
+.wh { position: relative; display: flex; gap: 4px; align-items: flex-end; height: 116px; padding-top: 4px; }
+.wh-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.wh-bar { height: 90px; width: 100%; display: flex; align-items: flex-end; background: #f1f5ff; border-radius: 6px; overflow: hidden; }
+.wh-bar i { display: block; width: 100%; background: #a9c4f5; border-radius: 6px 6px 0 0; }
+.wh-bar i.ok { background: #2f6fdb; }
+.wh-col span { font-size: .68rem; color: var(--muted); height: 18px; line-height: 18px; }
+.wh-goal { position: absolute; left: 0; right: 0; border-top: 1.5px dashed #2f6fdb; pointer-events: none; }
+.wh-goal span { position: absolute; right: 0; top: -18px; font-size: .68rem; font-weight: 600; color: #2f6fdb; background: #fff; padding: 0 4px; }
