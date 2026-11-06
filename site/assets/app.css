@@ -302,3 +302,10 @@ textarea { width: 100%; padding: 12px 14px; font: inherit; color: inherit; borde
 .plans { padding-top: 12px; }
 .plan { position: relative; }
 .plan .plan-tag { position: absolute; top: -11px; left: 16px; }
+
+/* butonul „Instalează pe telefon” de pe paginile de intrare */
+.inst { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+.inst-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.inst-help { margin-top: 12px; background: var(--accent-soft); border-radius: 12px; padding: 12px 14px; }
+.inst-steps { margin: 0; padding-left: 20px; font-size: .9rem; line-height: 1.55; }
+.inst-steps li + li { margin-top: 4px; }
