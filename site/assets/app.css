@@ -16,13 +16,13 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body {
-  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: 16px/1.5 "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   background: var(--bg); color: var(--ink);
   -webkit-font-smoothing: antialiased;
 }
 [hidden] { display: none !important; }
 a { color: var(--accent); }
-h1, h2, .display { font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; }
+h1, h2, .display { font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; }
 h1 { font-size: 1.6rem; line-height: 1.2; margin: 0 0 .4rem; letter-spacing: -.01em; }
 h2 { font-size: 1.1rem; margin: 0 0 .75rem; }
 p { margin: 0 0 1rem; }
@@ -292,7 +292,7 @@ textarea { width: 100%; padding: 12px 14px; font: inherit; color: inherit; borde
 .plan.custom .btn, .plan.custom .btn-ghost { background: #fff; color: #141414; border-color: #fff; }
 
 /* marca CoachMeal: „coach” gros, „meal” subțire, „o” e o farfurie */
-.pt-brand { display: inline-block; color: var(--ink); text-decoration: none; font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; font-size: 1.45rem; letter-spacing: -.04em; line-height: 1; white-space: nowrap; }
+.pt-brand { display: inline-block; color: var(--ink); text-decoration: none; font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; font-size: 1.45rem; letter-spacing: -.04em; line-height: 1; white-space: nowrap; }
 .pt-brand b { font-weight: 800; }
 .pt-brand span { font-weight: 500; }
 .pt-brand .pt-o { width: .6em; height: .6em; vertical-align: -.03em; margin: 0 .01em; }
@@ -323,7 +323,7 @@ textarea { width: 100%; padding: 12px 14px; font: inherit; color: inherit; borde
 .inst-ico { display: block; flex: none; width: 56px; height: 56px; border-radius: 22.5%; box-shadow: 0 1px 2px rgba(20,20,20,.12), 0 4px 12px rgba(20,20,20,.14); }
 .inst-row { display: flex; align-items: center; gap: 12px; padding: 14px 14px 0; }
 .inst-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
-.inst-txt b { font-family: 'Bricolage Grotesque', var(--font, system-ui), sans-serif; font-size: 1.12rem; font-weight: 800; letter-spacing: -.02em; }
+.inst-txt b { font-family: 'Geist', var(--font, system-ui), sans-serif; font-size: 1.12rem; font-weight: 800; letter-spacing: -.02em; }
 .inst-txt span { font-size: .85rem; color: var(--ink); }
 .inst-txt small { font-size: .74rem; color: var(--muted); margin-top: 2px; }
 .inst-get { display: flex; width: calc(100% - 28px); margin: 14px 14px 0; justify-content: center; align-items: center; gap: 8px; background: #141414; color: #fff; border: 0; border-radius: 999px; padding: 13px 18px; font: inherit; font-size: .98rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(20,20,20,.22); transition: transform .12s ease, box-shadow .12s ease; }
