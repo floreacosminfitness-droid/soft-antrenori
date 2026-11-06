@@ -60,7 +60,7 @@
     var acc = await App.account();
     if (!acc) return location.replace('intra.html');
     if (acc.role === 'trainer') return location.replace('antrenor.html');
-    if (acc.role !== 'client') { await sb.auth.signOut(); return location.replace('index.html'); }
+    if (acc.role !== 'client') { await sb.auth.signOut(); return location.replace('cont.html'); }
 
     var t = acc.trainer, c = acc.client;
     document.title = 'Planul meu · ' + t.display_name;

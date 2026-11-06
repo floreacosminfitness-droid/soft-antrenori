@@ -3,7 +3,7 @@
   "short_name": "CoachMeal",
   "description": "Planuri alimentare pentru clienții antrenorilor personali.",
   "lang": "ro",
-  "start_url": "index.html",
+  "start_url": "cont.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f6f5f2",

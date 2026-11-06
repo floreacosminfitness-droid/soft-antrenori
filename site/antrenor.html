@@ -29,10 +29,10 @@
 
 <!-- ============ ÎNREGISTRARE ANTRENOR ============ -->
 <main id="vSignup" class="wrap narrow" hidden>
-  <p class="center" style="margin:28px 0 18px"><a class="pt-brand lg" href="preturi.html" aria-label="CoachMeal"><b>c<svg class="pt-o" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="currentColor"/><circle cx="32" cy="32" r="17" fill="none" stroke="#F6F5F2" stroke-width="5"/></svg>ach</b><span>meal</span></a></p>
+  <p class="center" style="margin:28px 0 18px"><a class="pt-brand lg" href="./" aria-label="CoachMeal"><b>c<svg class="pt-o" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="currentColor"/><circle cx="32" cy="32" r="17" fill="none" stroke="#F6F5F2" stroke-width="5"/></svg>ach</b><span>meal</span></a></p>
   <div class="card">
     <h1>Creează cont de antrenor</h1>
-    <p class="muted">Clienții tăi primesc automat planul alimentar, iar tu îi urmărești pe toți dintr-un singur loc. <b>7 zile gratuit, fără card.</b> <a href="preturi.html">Vezi prețurile</a></p>
+    <p class="muted">Clienții tăi primesc automat planul alimentar, iar tu îi urmărești pe toți dintr-un singur loc. <b>7 zile gratuit, fără card.</b> <a href="./#preturi">Vezi prețurile</a></p>
     <p id="suMsg" class="msg" hidden></p>
     <form id="fSignup" novalidate>
       <div class="field"><label for="suName">Numele afișat clienților</label><input id="suName" type="text" maxlength="80" placeholder="de exemplu Andrei Ionescu Coaching" required></div>
@@ -40,12 +40,12 @@
       <div class="field"><label for="suPass">Parola (minim 8 caractere)</label><input id="suPass" type="password" autocomplete="new-password" minlength="8" required></div>
       <button class="btn btn-block" type="submit">Creează contul</button>
     </form>
-    <p class="small muted center" style="margin:14px 0 0">Ai deja cont? <a href="index.html">Intră în cont</a></p>
+    <p class="small muted center" style="margin:14px 0 0">Ai deja cont? <a href="cont.html">Intră în cont</a></p>
   </div>
 </main>
 
 <main id="vCheckEmail" class="wrap narrow" hidden>
-  <p class="center" style="margin:28px 0 18px"><a class="pt-brand lg" href="preturi.html" aria-label="CoachMeal"><b>c<svg class="pt-o" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="currentColor"/><circle cx="32" cy="32" r="17" fill="none" stroke="#F6F5F2" stroke-width="5"/></svg>ach</b><span>meal</span></a></p>
+  <p class="center" style="margin:28px 0 18px"><a class="pt-brand lg" href="./" aria-label="CoachMeal"><b>c<svg class="pt-o" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="currentColor"/><circle cx="32" cy="32" r="17" fill="none" stroke="#F6F5F2" stroke-width="5"/></svg>ach</b><span>meal</span></a></p>
   <div class="card center">
     <h1>Verifică emailul</h1>
     <p>Ți-am trimis un link de confirmare la <b id="ceEmail"></b>. Apasă pe el și ajungi direct în contul tău.</p>
@@ -380,7 +380,7 @@
     removeOldLogos(null);
   };
 
-  $('logout').onclick = async function () { await sb.auth.signOut(); location.replace('index.html'); };
+  $('logout').onclick = async function () { await sb.auth.signOut(); location.replace('cont.html'); };
 
   try { await start(); }
   catch (e) { view('vSignup'); App.msg($('suMsg'), App.ro(e)); }
