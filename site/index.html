@@ -12,7 +12,7 @@
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-title" content="CoachMeal">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="assets/app.css">
 <script>
   // linkurile din emailuri (resetare parolă, confirmare cont) ajung uneori pe adresa principală: le trimitem la intrare
@@ -23,7 +23,7 @@
   /* ---------- pagina de prețuri: tipografie mare, multă respirație, o singură mișcare (linia pașilor) ---------- */
   body.lp { background: #F6F5F2; }
   .lp .wrap { max-width: 1120px; padding-top: 0; }
-  .lp h1, .lp h2, .lp h3 { font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; color: #141414; }
+  .lp h1, .lp h2, .lp h3 { font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; color: #141414; }
   html { scroll-behavior: smooth; scroll-padding-top: 76px; }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   .lp a:focus-visible, .lp button:focus-visible, .lp summary:focus-visible { outline: 2px solid #141414; outline-offset: 3px; border-radius: 8px; }
@@ -43,7 +43,7 @@
   .hero-txt { max-width: 560px; }
   .hero .kicker { display: inline-flex; align-items: center; gap: 8px; font-size: .9rem; font-weight: 600; color: #141414; background: #fff; border: 1px solid #E4E1DA; border-radius: 99px; padding: 6px 12px 6px 8px; margin-bottom: 22px; }
   .hero .kicker svg { flex: none; }
-  .hero h1 { font-size: clamp(2.5rem, 6.4vw, 4.6rem); line-height: .98; letter-spacing: -.045em; font-weight: 800; margin: 0 0 22px; }
+  .hero h1 { font-size: clamp(2.4rem, 6vw, 4.2rem); line-height: 1; letter-spacing: -.03em; font-weight: 700; margin: 0 0 22px; }
   .hero h1 span { display: block; font-weight: 600; color: #5E5B55; }
   .hero .lead { font-size: clamp(1.05rem, 1.6vw, 1.2rem); line-height: 1.55; color: #5E5B55; margin: 0 0 30px; max-width: 30em; }
   .cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
@@ -79,13 +79,13 @@
 
   /* cifre: doar text, fără cutii */
   .figures { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; padding: 34px 0 10px; border-top: 1px solid #E4E1DA; margin-top: 24px; }
-  .figures b { display: block; font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; font-size: clamp(2rem, 4.4vw, 3rem); font-weight: 800; letter-spacing: -.04em; line-height: 1; color: #141414; }
+  .figures b { display: block; font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; font-size: clamp(2rem, 4.4vw, 3rem); font-weight: 700; letter-spacing: -.028em; line-height: 1; color: #141414; }
   .figures span { display: block; margin-top: 8px; font-size: .92rem; color: #5E5B55; max-width: 14em; }
   @media (max-width: 720px) { .figures { grid-template-columns: repeat(2, 1fr); gap: 26px 16px; } }
 
   /* titluri de secțiune */
   .sec { padding: 96px 0 0; }
-  .sec-h { font-size: clamp(2rem, 4.6vw, 3.1rem); line-height: 1.02; letter-spacing: -.04em; font-weight: 800; margin: 0 0 14px; max-width: 16em; }
+  .sec-h { font-size: clamp(2rem, 4.6vw, 3.1rem); line-height: 1.02; letter-spacing: -.028em; font-weight: 700; margin: 0 0 14px; max-width: 16em; }
   .sec-p { color: #5E5B55; font-size: 1.08rem; margin: 0 0 44px; max-width: 34em; }
   @media (max-width: 720px) { .sec { padding-top: 72px; } }
 
@@ -100,7 +100,7 @@
   .plate svg { display: block; }
   .plate .rim { fill: #fff; stroke: #D6D2CA; stroke-width: 2; transition: fill .35s, stroke .35s; }
   .plate .well { fill: none; stroke: #D6D2CA; stroke-width: 2; transition: stroke .35s; }
-  .plate text { font: 800 15px 'Bricolage Grotesque', system-ui, sans-serif; fill: #8A867F; transition: fill .35s; }
+  .plate text { font: 800 15px 'Geist', system-ui, sans-serif; fill: #8A867F; transition: fill .35s; }
   .route .stop.on .rim { fill: #141414; stroke: #141414; }
   .route .stop.on .well { stroke: #F6F5F2; }
   .route .stop.on text { fill: #fff; }
@@ -113,7 +113,7 @@
   .feat { display: grid; grid-template-columns: 1fr 320px; gap: 72px; align-items: center; padding: 56px 0; border-top: 1px solid #E4E1DA; }
   .feat:nth-of-type(even) { grid-template-columns: 320px 1fr; }
   .feat:nth-of-type(even) .feat-txt { order: 2; }
-  .feat h2 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.08; letter-spacing: -.035em; font-weight: 800; margin: 0 0 14px; }
+  .feat h2 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.08; letter-spacing: -.025em; font-weight: 700; margin: 0 0 14px; }
   .feat p { color: #5E5B55; margin: 0 0 20px; font-size: 1.05rem; max-width: 32em; }
   .feat ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
   .feat li { padding-left: 30px; position: relative; font-size: .98rem; }
@@ -130,7 +130,7 @@
 
   /* socoteala */
   .calc { margin: 72px 0 0; padding: 40px 0; border-top: 1px solid #E4E1DA; border-bottom: 1px solid #E4E1DA; }
-  .calc p { margin: 0; font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; font-size: clamp(1.4rem, 3.2vw, 2.1rem); line-height: 1.2; letter-spacing: -.03em; font-weight: 600; max-width: 26em; color: #141414; }
+  .calc p { margin: 0; font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; font-size: clamp(1.4rem, 3.2vw, 2.1rem); line-height: 1.2; letter-spacing: -.03em; font-weight: 600; max-width: 26em; color: #141414; }
   .calc p span { color: #5E5B55; }
 
   /* prețuri */
@@ -145,8 +145,8 @@
   @media (max-width: 560px) { .lp .plans { grid-template-columns: 1fr; } }
   .lp .plan { position: relative; display: flex; flex-direction: column; gap: 4px; background: #fff; border: 1px solid #E4E1DA; border-radius: 20px; padding: 24px 22px 22px; box-shadow: none; color: #141414; }
   .lp .plan h3 { margin: 0 0 14px; font-size: 1.25rem; letter-spacing: -.02em; }
-  .lp .plan .price { font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; font-size: 2.6rem; font-weight: 800; letter-spacing: -.045em; line-height: 1; }
-  .lp .plan .price small { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: .9rem; font-weight: 500; letter-spacing: 0; color: #5E5B55; }
+  .lp .plan .price { font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; font-size: 2.6rem; font-weight: 700; letter-spacing: -.03em; line-height: 1; }
+  .lp .plan .price small { font-family: 'Geist', system-ui, sans-serif; font-size: .9rem; font-weight: 500; letter-spacing: 0; color: #5E5B55; }
   .lp .plan .sub { font-size: .86rem; color: #5E5B55; min-height: 1.3em; }
   .lp .plan .cap { margin: 16px 0 2px; padding-top: 16px; border-top: 1px solid #E4E1DA; font-size: .98rem; }
   .lp .plan .note2 { color: #5E5B55; font-size: .9rem; margin: 6px 0 20px; flex: 1; }
@@ -176,7 +176,7 @@
 
   /* îndemnul de la final */
   .closing { margin: 104px 0 0; background: #141414; color: #fff; border-radius: 28px; padding: 64px 32px; display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: end; }
-  .closing h2 { color: #fff; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1; letter-spacing: -.045em; font-weight: 800; margin: 0 0 14px; }
+  .closing h2 { color: #fff; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1; letter-spacing: -.03em; font-weight: 700; margin: 0 0 14px; }
   .closing p { margin: 0; color: #B9B5AD; font-size: 1.05rem; }
   .closing .btn { background: #fff; color: #141414; border-color: #fff; box-shadow: none; }
   @media (max-width: 720px) { .closing { grid-template-columns: 1fr; padding: 44px 24px; border-radius: 22px; margin-top: 80px; } }
