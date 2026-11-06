@@ -304,8 +304,32 @@ textarea { width: 100%; padding: 12px 14px; font: inherit; color: inherit; borde
 .plan .plan-tag { position: absolute; top: -11px; left: 16px; }
 
 /* butonul „Instalează pe telefon” de pe paginile de intrare */
-.inst { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
-.inst-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-.inst-help { margin-top: 12px; background: var(--accent-soft); border-radius: 12px; padding: 12px 14px; }
+.inst { margin-top: 20px; }
+.inst-card { border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: #fff; }
+.inst-phone { background: linear-gradient(160deg, #efe9df 0%, #e4ece6 55%, #e7e3ee 100%); padding: 18px 0 0; display: flex; justify-content: center; }
+.inst-screen { width: 214px; background: rgba(255,255,255,.55); border: 6px solid #141414; border-bottom: 0; border-radius: 30px 30px 0 0; padding: 8px 14px 14px; backdrop-filter: blur(2px); }
+.inst-bar { display: flex; justify-content: space-between; align-items: center; font-size: .62rem; font-weight: 700; color: #141414; padding: 0 4px 10px; }
+.inst-sig { display: inline-flex; gap: 2px; align-items: flex-end; }
+.inst-sig b { display: block; width: 3px; background: #141414; border-radius: 1px; }
+.inst-sig b:nth-child(1) { height: 4px; } .inst-sig b:nth-child(2) { height: 6px; } .inst-sig b:nth-child(3) { height: 8px; }
+.inst-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 8px; }
+.inst-app { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.inst-app i { display: block; width: 38px; height: 38px; border-radius: 22.5%; }
+.inst-app em { display: block; width: 26px; height: 4px; border-radius: 2px; background: rgba(20,20,20,.14); }
+.inst-me .inst-ico { width: 38px; height: 38px; box-shadow: 0 6px 14px rgba(20,20,20,.28); animation: instPop 2.6s ease-in-out infinite; }
+.inst-me em { width: auto; height: auto; background: none; font-style: normal; font-size: .55rem; font-weight: 600; color: #141414; white-space: nowrap; letter-spacing: -.01em; }
+@keyframes instPop { 0%, 70%, 100% { transform: translateY(0); } 80% { transform: translateY(-3px); } 90% { transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .inst-me .inst-ico { animation: none; } }
+.inst-ico { display: block; flex: none; width: 56px; height: 56px; border-radius: 22.5%; box-shadow: 0 1px 2px rgba(20,20,20,.12), 0 4px 12px rgba(20,20,20,.14); }
+.inst-row { display: flex; align-items: center; gap: 12px; padding: 14px 14px 0; }
+.inst-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.inst-txt b { font-family: 'Bricolage Grotesque', var(--font, system-ui), sans-serif; font-size: 1.12rem; font-weight: 800; letter-spacing: -.02em; }
+.inst-txt span { font-size: .85rem; color: var(--ink); }
+.inst-txt small { font-size: .74rem; color: var(--muted); margin-top: 2px; }
+.inst-get { display: flex; width: calc(100% - 28px); margin: 14px 14px 0; justify-content: center; align-items: center; gap: 8px; background: #141414; color: #fff; border: 0; border-radius: 999px; padding: 13px 18px; font: inherit; font-size: .98rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(20,20,20,.22); transition: transform .12s ease, box-shadow .12s ease; }
+.inst-get:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(20,20,20,.28); }
+.inst-get:active { transform: translateY(0) scale(.98); }
+.inst-note { margin: 8px 14px 14px; font-size: .78rem; line-height: 1.45; color: var(--muted); text-align: center; }
+.inst-help { margin: 0 14px 14px; background: var(--accent-soft); border-radius: 12px; padding: 12px 14px; }
 .inst-steps { margin: 0; padding-left: 20px; font-size: .9rem; line-height: 1.55; }
 .inst-steps li + li { margin-top: 4px; }

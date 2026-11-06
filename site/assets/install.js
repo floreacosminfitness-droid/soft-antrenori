@@ -38,12 +38,23 @@
       'Pe calculator, în Chrome sau Edge, poți folosi iconița de instalare din bara de adrese.</p>';
   }
 
+  var sub = box.getAttribute('data-sub') || 'Planuri alimentare';
+  var ICON = '<img class="inst-ico" src="assets/icons/apple-touch-icon.png" alt="" width="60" height="60">';
+  var DL = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>';
+  function phone() {
+    // un ecran de telefon în miniatură: CoachMeal printre alte aplicații, exact cum apare după instalare
+    var ghost = function (c) { return '<span class="inst-app"><i style="background:' + c + '"></i><em></em></span>'; };
+    return '<div class="inst-phone" aria-hidden="true"><div class="inst-screen">' +
+      '<div class="inst-bar"><span>9:41</span><span class="inst-sig"><b></b><b></b><b></b></span></div>' +
+      '<div class="inst-grid">' + ghost('#d9d6cf') + ghost('#cfd8d3') + '<span class="inst-app inst-me">' + ICON + '<em>CoachMeal</em></span>' + ghost('#d7d3dc') +
+      ghost('#ddd5cc') + ghost('#d1d6dd') + ghost('#d9d2d2') + ghost('#d4dbcf') + '</div></div></div>';
+  }
   function render(open) {
-    box.innerHTML = '<button type="button" class="btn btn-ghost btn-block inst-btn" id="instBtn">' +
-      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M12 7v7"/><path d="M9 11l3 3 3-3"/></svg>' +
-      '<span>Instalează pe telefon</span></button>' +
-      '<p class="small muted center" style="margin:6px 0 0">Ca o aplicație: o deschizi direct de pe ecran, fără să mai cauți site-ul.</p>' +
-      (open ? '<div class="inst-help" id="instHelp">' + steps() + '</div>' : '');
+    box.innerHTML = '<div class="inst-card">' + phone() +
+      '<div class="inst-row">' + ICON + '<div class="inst-txt"><b>CoachMeal</b><span>' + sub + '</span><small>Aplicație pentru telefon</small></div></div>' +
+      '<button type="button" class="inst-get" id="instBtn">' + DL + '<span>Instalează pe telefon</span></button>' +
+      '<p class="inst-note">Se deschide dintr-o atingere, ca orice aplicație, fără să mai cauți site-ul.</p>' +
+      (open ? '<div class="inst-help" id="instHelp">' + steps() + '</div>' : '') + '</div>';
     box.hidden = false;
     document.getElementById('instBtn').addEventListener('click', onClick);
   }
