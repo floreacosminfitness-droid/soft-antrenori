@@ -58,7 +58,7 @@
   }
 
   function homeFor(role) {
-    return role === 'trainer' ? 'antrenor.html' : role === 'client' ? 'client.html' : 'index.html';
+    return role === 'trainer' ? 'antrenor.html' : role === 'client' ? 'client.html' : 'cont.html';
   }
 
   function fmtDate(iso) {
