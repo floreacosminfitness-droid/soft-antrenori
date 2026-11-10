@@ -19,7 +19,7 @@ window.APP_CONFIG = {
   // Pagina Stripe unde antrenorul își schimbă cardul, planul sau anulează (Customer portal → link de intrare).
   // Unde ajung cererile de ofertă pentru peste 50 de clienți (apare public pe pagina de prețuri).
   // Datele firmei, afișate în subsolul paginii publice.
-  COMPANY: { name: '', cui: '42638994', reg: '', address: '' },
+  COMPANY: { name: '', cui: '42638994', reg: 'F8/439/2020', address: '' },
   CONTACT_EMAIL: 'support@coachmeal.app',
   BILLING_PORTAL: 'https://billing.stripe.com/p/login/14A00i7rj9kRfQib4icMM00'
 };

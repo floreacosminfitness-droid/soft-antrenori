@@ -39,13 +39,34 @@
     return 'Abonament ' + s + (b.period_end ? ', se reînnoiește pe ' + App.fmtDate(b.period_end) : '') + '.';
   }
 
+  // planul următor, cu mai mulți clienți (null = peste 50: ofertă la cerere)
+  function nextPlan(b) {
+    var cur = { trial: -1, start: 0, pro: 1 }[b.plan];
+    if (cur == null) return null;
+    return PLANS.filter(function (p, i) { return i > cur && p.clients > b.limit; })[0] || null;
+  }
+  function de(n) { return n >= 20 ? n + ' de' : String(n); }
+  function people(n) { return n === 1 ? 'o persoană a încercat' : n + ' persoane au încercat'; }
+
   // bara de sus din panou
   function bar(b) {
     var warn = b.plan === 'none' || b.status === 'past_due' || (b.plan === 'trial' && daysLeft(b.trial_ends_at) <= 3);
     var full = b.active && b.used >= b.limit;
-    return '<section class="card' + (warn ? ' paywall' : '') + '"><div class="bill-bar"><div class="grow"><b>' + NAMES[b.plan] + '</b> · ' + usedTxt(b) + (b.active ? meter(b) : '') +
-      '<p class="small muted" style="margin:8px 0 0">' + esc(statusLine(b)) + (full ? ' <b>Ai atins limita: clienții noi nu se mai pot înscrie.</b>' : '') + '</p></div>' +
-      '<button type="button" class="btn ' + (warn || full || b.plan === 'trial' ? '' : 'btn-ghost ') + 'btn-sm" data-bill="open">' + (paid(b) ? 'Abonamentul meu' : full && b.plan !== 'trial' ? 'Mărește planul' : 'Alege abonamentul') + '</button></div></section>';
+    var left = b.limit - b.used, near = b.active && !full && b.limit >= 5 && left <= 2;
+    var nx = nextPlan(b), blocked = +b.blocked_7d || 0;
+    var head = '<b>' + NAMES[b.plan] + '</b> · ' + usedTxt(b) + (b.active ? meter(b) : '');
+    if (full) {
+      return '<section class="card limit-full" role="status"><div class="bill-bar"><div class="grow">' + head +
+        '<p style="margin:10px 0 0"><b>Ai atins limita de ' + b.limit + ' clienți activi.</b> Clienții noi nu se mai pot înscrie din link-ul tău' +
+        (blocked ? ': <b>' + people(blocked) + ' în ultimele 7 zile.</b>' : '.') + '</p>' +
+        '<p class="small muted" style="margin:6px 0 0">' + (nx ? 'Cu ' + nx.name + ' ai loc pentru ' + de(nx.clients) + ' clienți, de la ' + lei(nx.month) + ' pe lună.' : 'Pentru mai mult de ' + b.limit + ' clienți îți facem o ofertă personalizată.') + ' Sau arhivează un client care nu mai lucrează cu tine.</p></div>' +
+        '<button type="button" class="btn btn-sm" data-bill="open">' + (nx ? 'Treci la ' + nx.name : 'Cere ofertă') + '</button></div></section>';
+    }
+    return '<section class="card' + (warn ? ' paywall' : '') + '"><div class="bill-bar"><div class="grow">' + head +
+      '<p class="small muted" style="margin:8px 0 0">' + esc(statusLine(b)) + '</p>' +
+      (near ? '<p class="small" style="margin:6px 0 0"><b>Mai ai loc pentru ' + (left === 1 ? 'un singur client' : left + ' clienți') + '.</b> La limită, clienții noi nu se mai pot înscrie' + (nx ? ': ' + nx.name + ' are ' + de(nx.clients) + ' locuri.' : '.') + '</p>' : '') +
+      '</div>' +
+      '<button type="button" class="btn ' + (warn || near || b.plan === 'trial' ? '' : 'btn-ghost ') + 'btn-sm" data-bill="open">' + (paid(b) ? (near && nx ? 'Treci la ' + nx.name : 'Abonamentul meu') : 'Alege abonamentul') + '</button></div></section>';
   }
 
   function plansHtml(b, me, email) {
