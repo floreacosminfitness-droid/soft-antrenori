@@ -344,11 +344,11 @@ textarea { width: 100%; padding: 12px 14px; font: inherit; color: inherit; borde
 
 /* ---- culoare (aceeași paletă ca pe Instagram) ---- */
 .av { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; font-size: .72rem; font-weight: 700; margin-right: 10px; vertical-align: middle; color: #141414; letter-spacing: .02em; }
-.av0 { background: #D9FF5B; } .av1 { background: #9EE6C1; } .av2 { background: #C7B8FF; }
+.av0 { background: #a9dcff; } .av1 { background: #9EE6C1; } .av2 { background: #C7B8FF; }
 .av3 { background: #FFD84D; } .av4 { background: #FFB8D2; } .av5 { background: #a9bcff; }
 .stats { gap: 10px; }
 .stats .stat { padding: 10px 16px; border-radius: 12px; min-width: 96px; }
-.stats .stat:first-child { background: #f2fdd0; }
+.stats .stat:first-child { background: #e6eeff; }
 .stats .stat:nth-child(2) { background: #efeaff; }
 .badge-water { background: #eaf1ff; color: #1f3f86; }
 .badge-water.low { background: #fff4e0; color: #7a4d00; }
@@ -367,7 +367,7 @@ textarea { width: 100%; padding: 12px 14px; font: inherit; color: inherit; borde
 body:has(main.narrow:not([hidden])) {
   background:
     radial-gradient(520px 420px at 0% 0%, rgba(36,72,255,.16), transparent 70%),
-    radial-gradient(480px 420px at 100% 12%, rgba(217,255,91,.45), transparent 70%),
+    radial-gradient(480px 420px at 100% 12%, rgba(169,220,255,.45), transparent 70%),
     radial-gradient(520px 460px at 100% 100%, rgba(199,184,255,.45), transparent 70%),
     radial-gradient(420px 380px at 0% 100%, rgba(158,230,193,.45), transparent 70%),
     #F6F5F2;
@@ -375,8 +375,8 @@ body:has(main.narrow:not([hidden])) {
 }
 main.narrow > .card, main.narrow > section.card { position: relative; overflow: hidden; border-color: transparent; box-shadow: 0 24px 60px -30px rgba(20,20,40,.35); }
 main.narrow > .card::before, main.narrow > section.card::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px;
-  background: linear-gradient(90deg, #2448FF 0 20%, #C7B8FF 20% 40%, #9EE6C1 40% 60%, #D9FF5B 60% 80%, #FFD84D 80% 100%); }
-.inst-phone { background: linear-gradient(160deg, #e3e9ff 0%, #f2fdd0 55%, #efeaff 100%); }
+  background: linear-gradient(90deg, #2448FF 0 20%, #C7B8FF 20% 40%, #9EE6C1 40% 60%, #a9dcff 60% 80%, #FFD84D 80% 100%); }
+.inst-phone { background: linear-gradient(160deg, #e3e9ff 0%, #eaf5ff 55%, #efeaff 100%); }
 
 /* limita de clienți atinsă */
 .card.limit-full { border: 1.5px solid #2448FF; background: #f3f6ff; }

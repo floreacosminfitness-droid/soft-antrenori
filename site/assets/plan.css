@@ -129,11 +129,11 @@
 
 /* ---- culoare (aceeași paletă ca pe Instagram) ---- */
 :root {
-  --c-blue: #2448FF; --c-lime: #D9FF5B; --c-mint: #9EE6C1; --c-lilac: #C7B8FF; --c-yellow: #FFD84D; --c-pink: #FFB8D2;
+  --c-blue: #2448FF; --c-lime: #B9C8FF; --c-mint: #9EE6C1; --c-lilac: #C7B8FF; --c-yellow: #FFD84D; --c-pink: #FFB8D2;
   --w: #2f6fdb; --w-soft: #eaf1ff;
 }
 .mp-tile { border: 0; }
-.mp-tile.t-kcal { background: #f2fdd0; }
+.mp-tile.t-kcal { background: #ecebe7; }
 .mp-tile.t-p { background: #e6eeff; }
 .mp-tile.t-c { background: #fff0db; }
 .mp-tile.t-f { background: #ffe7e4; }

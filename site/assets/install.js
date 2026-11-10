@@ -47,7 +47,7 @@
     return '<div class="inst-phone" aria-hidden="true"><div class="inst-screen">' +
       '<div class="inst-bar"><span>9:41</span><span class="inst-sig"><b></b><b></b><b></b></span></div>' +
       '<div class="inst-grid">' + ghost('#FFD84D') + ghost('#9EE6C1') + '<span class="inst-app inst-me">' + ICON + '<em>CoachMeal</em></span>' + ghost('#C7B8FF') +
-      ghost('#FFB8D2') + ghost('#a9bcff') + ghost('#D9FF5B') + ghost('#ffc9a8') + '</div></div></div>';
+      ghost('#FFB8D2') + ghost('#a9bcff') + ghost('#a9dcff') + ghost('#ffc9a8') + '</div></div></div>';
   }
   function render(open) {
     box.innerHTML = '<div class="inst-card">' + phone() +
