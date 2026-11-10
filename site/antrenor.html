@@ -11,11 +11,11 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-title" content="CoachMeal">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="assets/fonts/geist.css">
 <link rel="stylesheet" href="assets/app.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/config.js"></script>
+<script src="assets/track.js"></script>
 <script src="assets/common.js"></script>
 <script src="assets/generator.js"></script>
 <script src="assets/checkin.js"></script>
@@ -38,6 +38,7 @@
       <div class="field"><label for="suName">Numele afișat clienților</label><input id="suName" type="text" maxlength="80" placeholder="de exemplu Andrei Ionescu Coaching" required></div>
       <div class="field"><label for="suEmail">Email</label><input id="suEmail" type="email" autocomplete="email" required></div>
       <div class="field"><label for="suPass">Parola (minim 8 caractere)</label><input id="suPass" type="password" autocomplete="new-password" minlength="8" required></div>
+      <p class="small muted" style="margin:0 0 12px">Creând contul, ești de acord cu <a href="termeni.html" target="_blank">Termenii și condițiile</a> și cu <a href="confidentialitate.html" target="_blank">Politica de confidențialitate</a>.</p>
       <button class="btn btn-block" type="submit">Creează contul</button>
     </form>
     <p class="small muted center" style="margin:14px 0 0">Ai deja cont? <a href="cont.html">Intră în cont</a></p>
@@ -58,6 +59,7 @@
   <header class="topbar">
     <div class="brand"><span id="tbLogo"></span><span id="tbName"></span></div>
     <div class="spacer"></div>
+    <a class="btn btn-ghost btn-sm" id="admLink" href="admin.html" hidden style="margin-right:6px">Statistici</a>
     <button class="btn btn-ghost btn-sm" id="logout" type="button">Ieși</button>
   </header>
 
@@ -137,6 +139,7 @@
 
   function view(id) {
     ['loading', 'vSignup', 'vCheckEmail', 'vApp'].forEach(function (v) { App.show($(v), v === id); });
+    if (id === 'vSignup' && window.CMTrack) CMTrack('signup_view');
   }
 
   function logoHtml(url, name, big) {
@@ -268,6 +271,7 @@
     var ses = await sb.auth.getSession(); email = (ses.data.session && ses.data.session.user && ses.data.session.user.email) || '';
     renderMe();
     view('vApp');
+    sb.rpc('is_admin').then(function (r) { if (r.data === true) $('admLink').hidden = false; }, function () {});
     renderBilling();
     loadClients();
     $('alertsList').addEventListener('click', function (e) { var ob = e.target.closest('[data-open]'); if (ob) openClient(ob.getAttribute('data-open')); });

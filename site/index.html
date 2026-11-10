@@ -11,14 +11,14 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-title" content="CoachMeal">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="assets/fonts/geist.css">
 <link rel="stylesheet" href="assets/app.css">
 <script>
   // linkurile din emailuri (resetare parolă, confirmare cont) ajung uneori pe adresa principală: le trimitem la intrare
   if (/(access_token|type=recovery|error_description)/.test(location.hash)) location.replace('cont.html' + location.hash);
 </script>
 <script src="assets/config.js"></script>
+<script src="assets/track.js" data-auto="view" defer></script>
 <style>
   /* ---------- pagina de prețuri: tipografie mare, multă respirație, o singură mișcare (linia pașilor) ---------- */
   body.lp { background: #F6F5F2; }
@@ -441,6 +441,8 @@
       <p><a href="#preturi">Prețuri</a></p>
       <p><a href="#intrebari">Întrebări</a></p>
       <p><a href="cont.html">Intră în cont</a></p>
+      <p><a href="termeni.html">Termeni și condiții</a></p>
+      <p><a href="confidentialitate.html">Confidențialitate</a></p>
     </div>
     <div>
       <b>Contact și protecția consumatorilor</b>

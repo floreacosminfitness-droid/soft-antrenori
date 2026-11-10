@@ -11,11 +11,11 @@
 <link rel="manifest" href="manifest-client.webmanifest">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-title" content="CoachMeal">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="assets/fonts/geist.css">
 <link rel="stylesheet" href="assets/app.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/config.js"></script>
+<script src="assets/track.js"></script>
 <script src="assets/common.js"></script>
 </head>
 <body>
@@ -41,8 +41,9 @@
       <div class="field"><label for="jEmail">Email</label><input id="jEmail" type="email" autocomplete="email" required></div>
       <div class="field"><label for="jPass">Parola (minim 8 caractere)</label><input id="jPass" type="password" autocomplete="new-password" minlength="8" required></div>
       <div class="field">
-        <label class="check"><input type="checkbox" id="jShare"> <span>Sunt de acord ca <b id="trName2"></b> să vadă datele pe care le introduc aici (greutate, mese, plan), ca să mă poată urmări.</span></label>
+        <label class="check"><input type="checkbox" id="jShare"> <span>Sunt de acord ca <b id="trName2"></b> să vadă datele pe care le introduc aici, inclusiv cele despre sănătate (greutate, măsurători, poze de progres, mese și apă), ca să mă poată urmări.</span></label>
       </div>
+      <p class="small muted" style="margin:0 0 12px">Creând contul, ești de acord cu <a href="termeni.html" target="_blank">Termenii și condițiile</a> și cu <a href="confidentialitate.html" target="_blank">Politica de confidențialitate</a>. Ai minim 16 ani.</p>
       <button class="btn btn-block" type="submit">Creează contul</button>
     </form>
     <p class="small muted center" style="margin:14px 0 0">Ai deja cont? <a href="intra.html">Intră în cont</a></p>
@@ -77,6 +78,7 @@
     if (!r.data || !r.data.length) return view('vBad');
     var t = r.data[0];
     if (t.accepting === false) {
+      sb.rpc('note_full', { code: code }).then(function () {}, function () {});
       $('vBad').querySelector('h1').textContent = t.display_name + ' nu poate primi clienți noi acum';
       $('vBad').querySelector('p').textContent = 'Momentan nu se pot face înscrieri noi. Anunță-l pe antrenorul tău și încearcă din nou cu același link puțin mai târziu.';
       return view('vBad');
@@ -88,6 +90,7 @@
       ? '<img class="logo logo-lg" src="' + esc(t.logo_url) + '" alt="">'
       : '';
     view('vForm');
+    if (window.CMTrack) CMTrack('invite_view');
   } catch (e) {
     view('vForm'); App.msg($('fMsg'), App.ro(e));
   }
