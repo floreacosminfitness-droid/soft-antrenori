@@ -362,3 +362,18 @@ textarea { width: 100%; padding: 12px 14px; font: inherit; color: inherit; borde
 .wh-col span { font-size: .68rem; color: var(--muted); height: 18px; line-height: 18px; }
 .wh-goal { position: absolute; left: 0; right: 0; border-top: 1.5px dashed #2f6fdb; pointer-events: none; }
 .wh-goal span { position: absolute; right: 0; top: -18px; font-size: .68rem; font-weight: 600; color: #2f6fdb; background: #fff; padding: 0 4px; }
+
+/* ---- paginile de intrare și înscriere: aceeași paletă ---- */
+body:has(main.narrow:not([hidden])) {
+  background:
+    radial-gradient(520px 420px at 0% 0%, rgba(36,72,255,.16), transparent 70%),
+    radial-gradient(480px 420px at 100% 12%, rgba(217,255,91,.45), transparent 70%),
+    radial-gradient(520px 460px at 100% 100%, rgba(199,184,255,.45), transparent 70%),
+    radial-gradient(420px 380px at 0% 100%, rgba(158,230,193,.45), transparent 70%),
+    #F6F5F2;
+  background-attachment: fixed;
+}
+main.narrow > .card, main.narrow > section.card { position: relative; overflow: hidden; border-color: transparent; box-shadow: 0 24px 60px -30px rgba(20,20,40,.35); }
+main.narrow > .card::before, main.narrow > section.card::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px;
+  background: linear-gradient(90deg, #2448FF 0 20%, #C7B8FF 20% 40%, #9EE6C1 40% 60%, #D9FF5B 60% 80%, #FFD84D 80% 100%); }
+.inst-phone { background: linear-gradient(160deg, #e3e9ff 0%, #f2fdd0 55%, #efeaff 100%); }
