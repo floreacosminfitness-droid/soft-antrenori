@@ -232,32 +232,6 @@
   }
 
 
-  /* before & after */
-  .ba { display: grid; grid-template-columns: 1.15fr .85fr; gap: 28px; background: #fff; border: 1px solid #E4E1DA; border-radius: 28px; padding: 28px; align-items: start; }
-  .ba-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
-  .ba-top b { font-size: 1.05rem; }
-  .lp .ba-seg { margin: 0; }
-  .lp .ba-seg button.on { background: #141414; color: #fff; }
-  .ba-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .ba-pair figure { margin: 0; }
-  .ba-img { aspect-ratio: 3 / 4; border-radius: 18px; overflow: hidden; background: linear-gradient(180deg, #efece6, #e3dfd7); }
-  .ba-pair figure:last-child .ba-img { background: linear-gradient(180deg, #e9eeff, #dbe3ff); }
-  .ba-img svg { display: block; width: 100%; height: 100%; }
-  .ba-pair figcaption { margin-top: 8px; font-size: .9rem; color: #5E5B55; display: flex; align-items: center; gap: 8px; }
-  .ba-pair figcaption { flex-wrap: wrap; row-gap: 4px; } .ba-d { white-space: nowrap; }
-  .ba-tag { font-size: .75rem; font-weight: 700; padding: 3px 9px; border-radius: 99px; background: #ECE9E3; color: #141414; }
-  .ba-tag.now { background: var(--blue); color: #fff; }
-  .ba-table { width: 100%; border-collapse: collapse; font-size: .98rem; }
-  .ba-table th { font-size: .8rem; font-weight: 600; color: #8A867F; text-align: right; padding: 0 4px 10px; }
-  .ba-table td { text-align: right; padding: 12px 4px; border-top: 1px solid #E4E1DA; font-variant-numeric: tabular-nums; }
-  .ba-table th:first-child, .ba-table td:first-child { text-align: left; }
-  .ba-table td:first-child { font-weight: 600; }
-  .ba-table td.down { color: #1d6b3d; font-weight: 700; }
-  .ba-list { list-style: none; padding: 0; margin: 22px 0 0; display: grid; gap: 10px; }
-  .ba-list li { padding-left: 30px; position: relative; font-size: .98rem; }
-  .ba-list li::before { content: ""; position: absolute; left: 0; top: .2em; width: 18px; height: 18px; border-radius: 50%; background: var(--blue) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center / 11px no-repeat; }
-  .ba-fine { margin: 18px 0 0; font-size: .82rem; color: #8A867F; }
-  @media (max-width: 860px) { .ba { grid-template-columns: 1fr; padding: 18px; border-radius: 22px; } }
   .lp .tabs button.on { background: #141414; color: #fff; }
   .lp .plan.best { background: var(--blue); border-color: var(--blue); box-shadow: 0 30px 60px -30px rgba(36,72,255,.7); }
   .lp .plan.best .price small, .lp .plan.best .sub, .lp .plan.best .note2 { color: #D4DBFF; }
@@ -414,44 +388,6 @@
     </div>
   </section>
 
-  <section class="sec" id="progres">
-    <div class="ba-head">
-      <div>
-        <span class="who both">Pentru amândoi</span>
-        <h2 class="sec-h">Before &amp; after, din pozele clientului</h2>
-        <p class="sec-p">Clientul face check-in din telefon: 3 poze (față, profil, spate) și câteva măsurători. Tu vezi automat prima și ultima poză una lângă alta, plus cât a dat jos la fiecare măsură.</p>
-      </div>
-    </div>
-    <div class="ba" aria-label="Exemplu de comparație înainte și după, cu imagini ilustrative">
-      <div class="ba-photos">
-        <div class="ba-top"><b>Început → acum</b><div class="seg ba-seg" role="tablist" aria-label="Poza">
-          <button type="button" role="tab" aria-selected="true" class="on" data-pose="front">Față</button><button type="button" role="tab" aria-selected="false" data-pose="side">Profil</button><button type="button" role="tab" aria-selected="false" data-pose="back">Spate</button></div></div>
-        <div class="ba-pair">
-          <figure><div class="ba-img" id="baA"></div><figcaption><span class="ba-tag">Înainte</span><span class="ba-d">6 oct. · 88,1 kg</span></figcaption></figure>
-          <figure><div class="ba-img" id="baB"></div><figcaption><span class="ba-tag now">Acum</span><span class="ba-d">3 nov. · 85,2 kg</span></figcaption></figure>
-        </div>
-      </div>
-      <div class="ba-data">
-        <table class="ba-table">
-          <thead><tr><th></th><th>La început</th><th>Acum</th><th>Diferență</th></tr></thead>
-          <tbody>
-            <tr><td>Greutate</td><td>88,1</td><td>85,2</td><td class="down">−2,9 kg</td></tr>
-            <tr><td>Talie</td><td>96</td><td>90</td><td class="down">−6 cm</td></tr>
-            <tr><td>Șold</td><td>104</td><td>100,5</td><td class="down">−3,5 cm</td></tr>
-            <tr><td>Piept</td><td>106</td><td>104</td><td class="down">−2 cm</td></tr>
-            <tr><td>Braț</td><td>36</td><td>35,5</td><td class="down">−0,5 cm</td></tr>
-          </tbody>
-        </table>
-        <ul class="ba-list">
-          <li>Pozele se pun una lângă alta singure, pe fiecare unghi</li>
-          <li>Măsurătorile au și grafic, săptămână de săptămână</li>
-          <li>Pozele le vedeți doar tu și clientul, nu sunt publice</li>
-        </ul>
-        <p class="ba-fine">Imagini ilustrative. În aplicație apar pozele reale trimise de client.</p>
-      </div>
-    </div>
-  </section>
-
   <div class="calc"><p>Dacă ceri unui singur client 150–300 lei în plus pe lună pentru planul alimentar, <span>abonamentul se plătește singur.</span></p></div>
 
   <section class="sec" id="preturi">
@@ -579,41 +515,5 @@
 })();
 </script>
 
-<script>
-  // before & after: siluete ilustrative (nu poze reale)
-  (function () {
-    var A = document.getElementById('baA'), B = document.getElementById('baB'); if (!A) return;
-    var SK = '#cdb9a6', SH = '#3b3a36';
-    function fig(pose, k) {
-      // k: 1 = la început, 0 = acum
-      var w = 31 + 9 * k, h = 35 + 5 * k, s = 40, arm = 16 + 2 * k, leg = 23 + 3 * k, belly = 8 + 14 * k;
-      var g = '<circle cx="100" cy="42" r="19" fill="' + SK + '"/><rect x="92" y="58" width="16" height="16" rx="6" fill="' + SK + '"/>';
-      if (pose === 'side') {
-        g += '<line x1="96" y1="200" x2="94" y2="306" stroke="' + SK + '" stroke-width="' + (leg + 2) + '" stroke-linecap="round"/>' +
-          '<path d="M86 76 Q78 140 84 196 L' + (110 + k * 4) + ' 196 Q' + (112 + belly) + ' 158 ' + (110 + k * 3) + ' 122 Q116 96 108 76 Z" fill="' + SK + '"/>' +
-          '<path d="M82 186 L' + (112 + k * 5) + ' 186 L' + (110 + k * 4) + ' 226 L84 226 Z" fill="' + SH + '"/>' +
-          '<line x1="98" y1="88" x2="102" y2="198" stroke="#bfa995" stroke-width="' + arm + '" stroke-linecap="round"/>';
-      } else {
-        var W = 31 + 15 * k, H = 36 + 6 * k, ax = 56 + 6 * k;
-        g += '<line x1="' + (100 - H * .48) + '" y1="198" x2="' + (100 - H * .48 - 2) + '" y2="306" stroke="' + SK + '" stroke-width="' + leg + '" stroke-linecap="round"/>' +
-          '<line x1="' + (100 + H * .48) + '" y1="198" x2="' + (100 + H * .48 + 2) + '" y2="306" stroke="' + SK + '" stroke-width="' + leg + '" stroke-linecap="round"/>' +
-          '<line x1="51" y1="94" x2="' + (100 - ax) + '" y2="198" stroke="' + SK + '" stroke-width="' + arm + '" stroke-linecap="round"/>' +
-          '<line x1="149" y1="94" x2="' + (100 + ax) + '" y2="198" stroke="' + SK + '" stroke-width="' + arm + '" stroke-linecap="round"/>' +
-          '<path d="M86 70 C70 72 56 74 56 92 C56 116 ' + (100 - W - 2) + ' 134 ' + (100 - W) + ' 154 C' + (100 - W) + ' 172 ' + (100 - H) + ' 180 ' + (100 - H) + ' 198 L' + (100 + H) + ' 198 C' + (100 + H) + ' 180 ' + (100 + W) + ' 172 ' + (100 + W) + ' 154 C' + (100 + W + 2) + ' 134 144 116 144 92 C144 74 130 72 114 70 Z" fill="' + SK + '"/>' +
-          '<path d="M' + (100 - H - 1) + ' 186 L' + (100 + H + 1) + ' 186 L' + (100 + H + 3) + ' 230 L103 230 L100 216 L97 230 L' + (100 - H - 3) + ' 230 Z" fill="' + SH + '"/>' +
-          (pose === 'back' ? '<path d="M100 82 L100 178" stroke="#b9a38f" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M76 100 Q86 108 92 104 M124 100 Q114 108 108 104" stroke="#b9a38f" stroke-width="2" fill="none" stroke-linecap="round"/>' : '');
-      }
-      return '<svg viewBox="0 0 200 320" role="img" aria-label="Siluetă ilustrativă"><ellipse cx="100" cy="310" rx="56" ry="6" fill="rgba(20,20,20,.08)"/>' + g + '</svg>';
-    }
-    function show(pose) { A.innerHTML = fig(pose, 1); B.innerHTML = fig(pose, 0); }
-    document.querySelectorAll('[data-pose]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        document.querySelectorAll('[data-pose]').forEach(function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
-        show(b.getAttribute('data-pose'));
-      });
-    });
-    show('front');
-  })();
-</script>
 </body>
 </html>
