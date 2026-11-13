@@ -382,3 +382,17 @@ main.narrow > .card::before, main.narrow > section.card::before { content: ""; p
 .card.limit-full { border: 1.5px solid #2448FF; background: #f3f6ff; }
 .card.limit-full .meter i { background: #2448FF; }
 .card.limit-full .btn { background: #2448FF; border-color: #2448FF; }
+
+/* primii pași pentru antrenorii noi */
+.onb { border: 1.5px solid #c9d4ff; }
+.onb-head { display: flex; align-items: baseline; gap: 10px; }
+.onb-meter { margin-top: 12px; }
+.onb-meter i { background: #2448FF; transition: width .4s; }
+.onb-list { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.onb-list li { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; }
+.onb-list li.cur { background: #eef2ff; }
+.onb-list li.ok b { color: var(--muted); font-weight: 500; }
+.onb-dot { flex: none; width: 26px; height: 26px; border-radius: 50%; border: 2px solid #cfd3dc; display: grid; place-items: center; font-size: .78rem; font-weight: 700; color: #8a8f98; margin-top: -1px; }
+.onb-list li.cur .onb-dot { border-color: #2448FF; color: #2448FF; }
+.onb-list li.ok .onb-dot { background: #2448FF; border-color: #2448FF; color: #fff; }
+.onb-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
