@@ -69,6 +69,7 @@
   <main class="wrap stack" id="vHome">
     <p id="payMsg" class="msg" hidden></p>
     <div id="billBar"></div>
+    <section class="card onb" id="onbCard" hidden></section>
     <section class="card" id="alertsCard" hidden>
       <h2>Au nevoie de atenție</h2>
       <div class="alerts" id="alertsList"></div>
@@ -163,6 +164,7 @@
     $('prName').value = me.display_name;
     $('prLogo').innerHTML = logoHtml(me.logo_url, me.display_name, true);
     App.show($('rmLogo'), !!me.logo_url);
+    renderOnb();
   }
 
   function initials(n) { var p = String(n || '').trim().split(/\s+/); return ((p[0] || '')[0] || '').toUpperCase() + ((p.length > 1 ? p[p.length - 1][0] : '') || '').toUpperCase(); }
@@ -243,11 +245,66 @@
     q[2].data.forEach(function (x) { info.tgt[x.client_id] = x; });
     q[3].data.forEach(function (x) { info.prop[x.client_id] = true; });
     (q[4].data || []).forEach(function (x) { info.ov[x.client_id] = x; });
-    renderClients(); renderAlerts();
+    renderClients(); renderAlerts(); renderOnb();
   }
 
+  // ---- primii pași (pentru antrenorii noi) ----
+  function onbKey(k) { return 'cm_onb_' + k + '_' + me.id; }
+  function onbGet(k) { try { return localStorage.getItem(onbKey(k)); } catch (e) { return null; } }
+  function onbSet(k) { try { localStorage.setItem(onbKey(k), '1'); } catch (e) {} }
+  function renderOnb() {
+    var card = $('onbCard');
+    if (!me || !me.billing) return;
+    var b = me.billing, free = b.plan === 'gratuit';
+    var waiting = clients.find(function (c) { return c.status === 'active' && info.prof[c.id] && !info.tgt[c.id]; });
+    var anyProf = clients.some(function (c) { return info.prof[c.id]; });
+    var anyTgt = clients.some(function (c) { return info.tgt[c.id]; });
+    var sent = clients.length > 0 || !!onbGet('sent');
+    var steps = [
+      { done: true, t: 'Contul tău e gata', d: free ? 'Ai acces complet la CoachMeal.' : 'Ai 7 zile gratuite, cu până la 10 clienți.' },
+      { done: !!me.logo_url, opt: true, t: 'Pune-ți logo-ul', d: '' },
+      { done: sent, t: 'Trimite link-ul primului client', d: 'Sfat: fă-ți întâi un cont de client de test, cu alt email, ca să vezi exact ce primesc clienții tăi.',
+        a: '<button class="btn btn-sm" type="button" data-onb="copy">Copiază link-ul</button><a class="btn btn-ghost btn-sm" data-onb="wa" target="_blank" rel="noopener" href="' + esc($('waLink').href) + '">Trimite pe WhatsApp</a>' },
+      { done: anyProf, t: 'Clientul își completează datele', d: clients.length ? 'Am primit înscrierea. Așteptăm să-și completeze vârsta, greutatea și obiectivul (cam 2 minute).' : 'Își face cont din link și completează datele în cam 2 minute. Apare apoi în lista de mai jos.' },
+      { done: anyTgt, t: 'Îi setezi caloriile', d: 'Calculatorul vine precompletat cu datele lui. Planul pe 7 zile ajunge imediat pe telefonul clientului.',
+        a: waiting ? '<button class="btn btn-sm" type="button" data-onb="open" data-id="' + esc(waiting.id) + '">Setează caloriile pentru ' + esc(waiting.full_name.split(/\s+/)[0]) + '</button>' : '' }
+    ];
+    if (!free) steps.push({ done: Billing.paid(b), t: 'Alege abonamentul',
+      d: (b.plan === 'trial' && b.trial_ends_at ? 'Proba ta se termină pe ' + App.fmtDate(b.trial_ends_at) + '. ' : '') + 'Cu codul FONDATOR30 ai 30% reducere pe viață, cât mai sunt locuri.',
+      a: '<button class="btn btn-ghost btn-sm" type="button" data-onb="bill">Vezi abonamentele</button>' });
+    var need = steps.filter(function (s) { return !s.opt; });
+    var allDone = need.every(function (s) { return s.done; });
+    if (allDone || onbGet('hide')) { card.hidden = true; card.innerHTML = ''; return; }
+    var n = steps.filter(function (s) { return s.done; }).length;
+    var cur = steps.findIndex(function (s) { return !s.done && !s.opt; });
+    card.hidden = false;
+    card.innerHTML = '<div class="onb-head"><h2 style="margin:0">Primii pași</h2><span class="small muted">' + n + ' din ' + steps.length + '</span><div class="spacer"></div><button class="linkbtn small" type="button" data-onb="hide">Ascunde</button></div>' +
+      '<div class="meter onb-meter"><i style="width:' + Math.round(n / steps.length * 100) + '%"></i></div>' +
+      '<ol class="onb-list">' + steps.map(function (s, i) {
+        var show = !s.done && i === cur;
+        return '<li class="' + (s.done ? 'ok' : show ? 'cur' : '') + '"><span class="onb-dot" aria-hidden="true">' + (s.done ? '✓' : i + 1) + '</span><div>' +
+          '<b>' + esc(s.t) + '</b>' + (s.opt && !s.done ? ' <span class="small muted">(opțional) · </span><button class="linkbtn small" type="button" data-onb="logo">Încarcă acum</button>' : '') +
+          (show ? '<p class="small muted" style="margin:2px 0 0">' + esc(s.d) + '</p>' : '') +
+          (show && s.a ? '<div class="onb-acts">' + s.a + '</div>' : '') + '</div></li>';
+      }).join('') + '</ol>';
+  }
+  $('onbCard').addEventListener('click', async function (e) {
+    var t = e.target.closest('[data-onb]'); if (!t) return;
+    var k = t.getAttribute('data-onb');
+    if (k === 'logo') $('pickLogo').click();
+    else if (k === 'copy') {
+      try { await navigator.clipboard.writeText(inviteUrl()); t.textContent = 'Link copiat ✓'; }
+      catch (err) { $('invLink').scrollIntoView({ block: 'center' }); }
+      onbSet('sent'); setTimeout(renderOnb, 1500);
+    }
+    else if (k === 'wa') { onbSet('sent'); setTimeout(renderOnb, 800); }
+    else if (k === 'open') openClient(t.getAttribute('data-id'));
+    else if (k === 'bill') showBilling();
+    else if (k === 'hide') { onbSet('hide'); renderOnb(); }
+  });
+
   function showHome() { if (window.Chat) Chat.stop(); App.show($('vClient'), false); App.show($('vBilling'), false); App.show($('vHome'), true); loadClients(); refreshBilling(); window.scrollTo(0, 0); }
-  function renderBilling() { $('billBar').innerHTML = Billing.bar(me.billing); if (!$('vBilling').hidden) $('vBilling').innerHTML = Billing.section(me.billing, me, email); }
+  function renderBilling() { $('billBar').innerHTML = Billing.bar(me.billing); if (!$('vBilling').hidden) $('vBilling').innerHTML = Billing.section(me.billing, me, email); renderOnb(); }
   async function refreshBilling() { try { var a = await App.account(); if (a && a.billing) { me.billing = a.billing; renderBilling(); } } catch (e) {} }
   function showBilling() { App.show($('vHome'), false); App.show($('vClient'), false); App.show($('vBilling'), true); renderBilling(); window.scrollTo(0, 0); }
   document.addEventListener('click', function (e) {
@@ -313,7 +370,9 @@
     try { await navigator.clipboard.writeText(inviteUrl()); App.msg($('invMsg'), 'Link copiat.', 'ok'); }
     catch (e) { App.msg($('invMsg'), 'Nu am putut copia automat; selectează link-ul și copiază-l.', 'info'); }
     setTimeout(function () { App.msg($('invMsg'), ''); }, 2500);
+    onbSet('sent'); renderOnb();
   };
+  $('waLink').addEventListener('click', function () { onbSet('sent'); setTimeout(renderOnb, 800); });
 
   $('regen').onclick = async function () {
     if (!confirm('Generezi un link nou? Link-ul vechi nu va mai funcționa pentru înscrieri noi.')) return;
