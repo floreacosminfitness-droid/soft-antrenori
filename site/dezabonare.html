@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Dezabonare · CoachMeal</title>
+<link rel="icon" href="assets/icons/icon-192.png">
+<link rel="stylesheet" href="assets/fonts/geist.css">
+<link rel="stylesheet" href="assets/app.css">
+<link rel="stylesheet" href="assets/legal.css">
+<script src="assets/config.js"></script>
+</head>
+<body class="legal-page">
+<header class="legal-top">
+  <a class="pt-brand" href="./" aria-label="CoachMeal, prima pagină"><b>c<svg class="pt-o" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="currentColor"/><circle cx="32" cy="32" r="17" fill="none" stroke="#F6F5F2" stroke-width="5"/></svg>ach</b><span>meal</span></a>
+</header>
+<main class="legal">
+  <h1>Dezabonare</h1>
+  <p id="msg">Te dezabonăm de la emailurile despre perioada de probă…</p>
+  <p class="upd">Emailurile despre cont și plăți (de exemplu confirmarea abonamentului) le primești în continuare.</p>
+  <p><a href="antrenor.html">Înapoi la CoachMeal</a></p>
+</main>
+<script>
+(function () {
+  var t = new URLSearchParams(location.search).get('t') || '', m = document.getElementById('msg');
+  var url = (window.APP_CONFIG && window.APP_CONFIG.SUPABASE_URL || '') + '/functions/v1/emails';
+  if (!/^[0-9a-f-]{36}$/i.test(t)) { m.textContent = 'Linkul nu e complet. Deschide-l din nou din email sau scrie-ne și te dezabonăm noi.'; return; }
+  fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ stop: t }) })
+    .then(function (r) { return r.json(); })
+    .then(function (d) { m.textContent = d.ok ? 'Gata, nu-ți mai trimitem emailuri despre perioada de probă.' : 'Nu am găsit contul pentru acest link. Scrie-ne și te dezabonăm noi.'; })
+    .catch(function () { m.textContent = 'Nu am putut trimite cererea. Încearcă din nou peste câteva minute sau scrie-ne.'; });
+})();
+</script>
+</body>
+</html>
