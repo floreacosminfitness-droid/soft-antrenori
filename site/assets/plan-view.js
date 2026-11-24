@@ -18,7 +18,7 @@
 
   // ---- același format de salvare ca aplicația clientului ----
   function serialize(p) {
-    return { warnings: p.warnings || [], checked: p.checked || {}, seedN: p.seedN || 0, menuV: p.menuV || null, days: p.days.map(function (d) {
+    return { warnings: p.warnings || [], checked: p.checked || {}, seedN: p.seedN || 0, menuV: p.menuV || null, since: p.since || null, days: p.days.map(function (d) {
       return { meals: d.meals.map(function (m) {
         var o = { rid: m.recipe.id, slot: m.slot, type: m.type, share: m.share || null, name: m.name || null, steps: m.steps || null, cook: m.cook || null, swaps: m.swaps || null, target: m.target || null,
           items: m.items.map(function (i) { return [i.id, i.g, i.label || null, i.role]; }) };
@@ -32,7 +32,7 @@
   function fname(id) { return (V.food[id] ? V.food[id].name : id).replace(/ \(1 .*?\)$/, ''); }
   function hydrate(row) {
     var src = row.plan || {};
-    var p = { targets: row.targets, warnings: src.warnings || [], checked: src.checked || {}, seedN: src.seedN || 0, menuV: src.menuV || null, days: (src.days || []).map(function (d) {
+    var p = { targets: row.targets, warnings: src.warnings || [], checked: src.checked || {}, seedN: src.seedN || 0, menuV: src.menuV || null, since: src.since || row.week_start, days: (src.days || []).map(function (d) {
       return { meals: d.meals.filter(function (m) { return V.recipe[m.rid]; }).map(function (m) {
         var meal = { recipe: V.recipe[m.rid], slot: m.slot, type: m.type, target: m.target, items: m.items.filter(function (i) { return V.food[i[0]]; }).map(function (i) {
           return { id: i[0], name: fname(i[0]), g: i[1], label: i[2], role: i[3], x: V.food[i[0]] };
@@ -77,24 +77,43 @@
     V.row = (q[4].data && q[4].data[0]) || null;
   }
   function T0() { var t = V.targets; return { kcal: t.kcal, p: t.p, c: t.c, f: t.f }; }
-  // aceeași regulă ca aplicația clientului: planul e bun cât timp e din ultimele 7 zile, pe aceleași calorii și același meniu
-  function isCurrent() {
-    if (!V.row) return false;
-    if (daysBetween(V.row.week_start, today()) >= 7) return false;
-    if (!sameTargets(V.row.targets, V.targets)) return false;
-    return ((V.row.plan && V.row.plan.menuV) || null) === G.menuKey(V.menu);
-  }
-  async function makePlan() {
-    var start = today(), seed = start + '#0', plan;
-    if (V.menu) plan = G.menuPlan(V.content, V.menu, T0(), { seed: seed });
-    else {
-      var a = V.answers;
-      plan = G.generate(V.content, Object.assign({}, a, { exclude: (a.exclude || []).slice(), seed: seed }), { prepared: V.db, targets: T0() });
-    }
-    plan.seedN = 0; plan.checked = {};
+  // aceeași regulă ca aplicația clientului: planul rămâne același; la calorii noi se schimbă doar gramajele
+  async function saveRow(start, plan) {
     var r = await sb.from('meal_plans').upsert({ user_id: V.client.id, week_start: start, targets: plan.targets, plan: serialize(plan), updated_at: new Date().toISOString() }, { onConflict: 'user_id,week_start' }).select('*').single();
     if (r.error) throw r.error;
     V.row = r.data;
+  }
+  async function makePlan(seedN) {
+    var start = today(), seed = start + '#' + (seedN || 0), plan;
+    if (V.menu) plan = G.menuPlan(V.content, V.menu, T0(), { seed: seed });
+    else {
+      var a = V.answers;
+      var avoid = [];
+      if (seedN && V.row && V.row.plan && V.row.plan.days) V.row.plan.days.forEach(function (d) { d.meals.forEach(function (m) { if (avoid.indexOf(m.rid) < 0) avoid.push(m.rid); }); });
+      plan = G.generate(V.content, Object.assign({}, a, { exclude: (a.exclude || []).slice(), seed: seed }), { prepared: V.db, targets: T0(), avoid: avoid });
+    }
+    plan.seedN = seedN || 0; plan.checked = {}; plan.since = start;
+    await saveRow(start, plan);
+  }
+  // ce trebuie făcut ca planul salvat să fie la zi: '' = nimic
+  function needed() {
+    if (!V.row || !(V.row.plan && V.row.plan.days && V.row.plan.days.length)) return 'new';
+    if (((V.row.plan && V.row.plan.menuV) || null) !== G.menuKey(V.menu)) return 'new';
+    if (daysBetween(V.row.week_start, today()) >= 7) return 'roll';
+    if (!sameTargets(V.row.targets, V.targets)) return 'retarget';
+    return '';
+  }
+  async function bringUpToDate() {
+    var n = needed();
+    if (!n) return '';
+    if (n === 'new') { await makePlan(0); return 'new'; }
+    var cur = hydrate(V.row), changed = !sameTargets(V.row.targets, V.targets);
+    if (n === 'roll') { await saveRow(today(), G.rollPlan(cur, changed ? T0() : null)); return changed ? 'retarget' : 'roll'; }
+    var p = G.retargetPlan(cur, T0());
+    var r = await sb.from('meal_plans').update({ targets: p.targets, plan: serialize(p), updated_at: new Date().toISOString() }).eq('id', V.row.id).select('*').single();
+    if (r.error) throw r.error;
+    V.row = r.data;
+    return 'retarget';
   }
 
   // ---- afișare ----
@@ -117,7 +136,10 @@
     if (!V.targets) { el.innerHTML = h + '</div><p class="muted small" style="margin:8px 0 0">Setează caloriile mai sus. Planul se face imediat și îl vezi aici, exact cum îl primește ' + esc(first) + '.</p></section>'; return; }
     var p = V.plan, start = V.row.week_start, t = today();
     h += '<span class="small muted">' + (V.menu ? (V.menu.mode === 'pool' ? 'din alimentele alese de tine' : 'meniul făcut de tine') : 'meniu automat') + ' · săptămâna ' + fmtDate(start) + ' – ' + fmtDate(addDays(start, 6)) + '</span></div>';
-    h += '<p class="muted small" style="margin:6px 0 12px">Exact ce vede ' + esc(first) + ' în aplicație' + (V.made ? '. Planul a fost refăcut acum, pe cifrele salvate.' : ', cu mesele bifate și înlocuirile făcute de el.') + '</p>';
+    var since = p.since || start, age = daysBetween(since, t);
+    h += '<p class="muted small" style="margin:6px 0 12px">Exact ce vede ' + esc(first) + ' în aplicație, cu mesele bifate și înlocuirile făcute de el. Același plan din ' + fmtDate(since) + ' (' + (age < 1 ? 'de azi' : age === 1 ? 'de o zi' : 'de ' + age + ' zile') + ').</p>';
+    if (V.made === 'retarget') h += '<div class="mp-banner">Caloriile s-au schimbat: mesele și alimentele au rămas aceleași, doar gramajele s-au potrivit pe ' + p.targets.kcal + ' kcal.</div>';
+    if (V.made === 'new' && V.fresh) h += '<div class="mp-banner">Gata, ' + esc(first) + ' are un plan nou, cu alte mese, pe aceleași calorii.</div>';
     (p.warnings || []).forEach(function (w) { h += '<div class="mp-warn">' + esc(w) + '</div>'; });
     h += '<div class="mp-days" role="tablist">';
     for (var i = 0; i < 7; i++) { var ds = addDays(start, i); h += '<button type="button" role="tab" data-pvday="' + i + '" class="' + (V.day === i ? 'is-on' : '') + (ds === t ? ' today' : '') + '">' + DAYS3[new Date(ds + 'T12:00:00Z').getUTCDay()] + '<small>' + fmtDate(ds) + '</small></button>'; }
@@ -141,6 +163,11 @@
       });
       (d.extra || []).forEach(function (e) { h += '<div class="mp-meal pv-meal is-done"><div class="mp-mhead"><div><div class="mp-slot">În plus</div><h3>' + esc(e.name) + (e.g ? ' · ' + R(e.g) + ' g' : '') + '</h3></div></div>' + nutHtml(e) + '</div>'; });
     }
+    if (V.canEdit) {
+      h += '<div class="pv-new">' + (V.ask
+        ? '<p class="small" style="margin:0 0 10px"><b>Sigur faci un plan nou?</b> ' + esc(first) + ' primește alte mese pentru toată săptămâna' + (age < 7 ? ', deși planul actual are doar ' + (age < 1 ? 'o zi' : age + ' zile') + '. De obicei merită schimbat după cel puțin o săptămână.' : '.') + ' Caloriile și macro-urile rămân aceleași.</p><div class="row"><button type="button" class="btn btn-sm" data-pv="new">Da, fă un plan nou</button><button type="button" class="btn btn-ghost btn-sm" data-pv="cancel">Renunț</button></div>'
+        : '<button type="button" class="btn btn-ghost btn-sm" data-pv="ask">Fă un plan nou, cu alte mese</button><p class="muted small" style="margin:8px 0 0">Doar dacă ți-o cere clientul. Altfel planul rămâne același, iar când schimbi caloriile se ajustează doar gramajele.</p>') + '</div>';
+    }
     h += '</section>';
     el.innerHTML = h;
   }
@@ -148,14 +175,11 @@
   async function refresh(opts) {
     if (!V) return;
     opts = opts || {};
-    V.state = 'loading'; V.made = false; if (!opts.quiet) render();
+    V.state = 'loading'; V.made = ''; V.fresh = false; V.ask = false; if (!opts.quiet) render();
     try {
       await loadAll();
       if (V.answers && V.targets) {
-        if (!isCurrent()) {
-          if (V.canEdit) { await makePlan(); V.made = !!opts.saved; }
-          else if (!V.row) { V.state = 'ok'; V.plan = null; }
-        }
+        if (V.canEdit) V.made = await bringUpToDate();
         if (V.row) {
           V.plan = hydrate(V.row);
           if (V.day === null) V.day = Math.max(0, Math.min(6, daysBetween(V.row.week_start, today())));
@@ -177,7 +201,17 @@
     el.onclick = function (e) {
       var d = e.target.closest('[data-pvday]');
       if (d) { var v = d.getAttribute('data-pvday'); V.day = v === 'shop' ? 'shop' : +v; render(); return; }
-      if (e.target.closest('[data-pv=retry]')) refresh();
+      if (e.target.closest('[data-pv=retry]')) return refresh();
+      if (e.target.closest('[data-pv=ask]')) { V.ask = true; return render(); }
+      if (e.target.closest('[data-pv=cancel]')) { V.ask = false; return render(); }
+      var nb = e.target.closest('[data-pv=new]');
+      if (nb) {
+        nb.disabled = true;
+        (async function () {
+          try { await makePlan(((V.row && V.row.plan && V.row.plan.seedN) || 0) + 1); V.plan = hydrate(V.row); V.made = 'new'; V.fresh = true; V.ask = false; V.day = 0; render(); }
+          catch (err) { V.ask = false; V.state = 'error'; V.err = App.ro(err); render(); }
+        })();
+      }
     };
     refresh();
   }

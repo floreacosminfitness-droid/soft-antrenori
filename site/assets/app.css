@@ -405,3 +405,4 @@ main.narrow > .card::before, main.narrow > section.card::before { content: ""; p
 .pv-shop label { display: flex; justify-content: space-between; gap: 10px; padding: 9px 2px; border-bottom: 1px solid var(--line); }
 .pv-shop label.done span { text-decoration: line-through; color: var(--muted); }
 .pv-shop em { font-style: normal; color: var(--muted); white-space: nowrap; }
+.pv-new { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }

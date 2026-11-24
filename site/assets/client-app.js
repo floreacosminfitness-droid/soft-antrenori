@@ -31,7 +31,7 @@
 
   // ---------- salvarea planului (format compact, ca la COS FIT) ----------
   function serialize(p) {
-    return { warnings: p.warnings || [], checked: p.checked || {}, seedN: p.seedN || 0, menuV: p.menuV || null, days: p.days.map(function (d) {
+    return { warnings: p.warnings || [], checked: p.checked || {}, seedN: p.seedN || 0, menuV: p.menuV || null, since: p.since || null, days: p.days.map(function (d) {
       return { meals: d.meals.map(function (m) {
         var o = { rid: m.recipe.id, slot: m.slot, type: m.type, share: m.share || null, name: m.name || null, steps: m.steps || null, cook: m.cook || null, swaps: m.swaps || null, target: m.target || null,
           items: m.items.map(function (i) { return [i.id, i.g, i.label || null, i.role]; }) };
@@ -44,7 +44,7 @@
   }
   function hydrate(row) {
     var src = row.plan || {};
-    var p = { targets: row.targets, warnings: src.warnings || [], checked: src.checked || {}, seedN: src.seedN || 0, menuV: src.menuV || null, days: (src.days || []).map(function (d) {
+    var p = { targets: row.targets, warnings: src.warnings || [], checked: src.checked || {}, seedN: src.seedN || 0, menuV: src.menuV || null, since: src.since || row.week_start, days: (src.days || []).map(function (d) {
       return { meals: d.meals.filter(function (m) { return MP.recipe[m.rid]; }).map(function (m) {
         var meal = { recipe: MP.recipe[m.rid], slot: m.slot, type: m.type, target: m.target, items: m.items.filter(function (i) { return MP.food[i[0]]; }).map(function (i) {
           return { id: i[0], name: fname(i[0]), g: i[1], label: i[2], role: i[3], x: MP.food[i[0]] };
@@ -74,7 +74,7 @@
     seedN = seedN || 0;
     // meniul făcut de antrenor are prioritate; altfel, meniul automat din rețete
     var plan = MP.menu ? G.menuPlan(MP.content, MP.menu, T0(), { seed: start + '#' + seedN }) : G.generate(MP.content, mpQ(start + '#' + seedN), { prepared: MP.db, targets: T0() });
-    plan.seedN = seedN; plan.checked = {};
+    plan.seedN = seedN; plan.checked = {}; plan.since = start;
     var r = await sb.from('meal_plans').upsert({ week_start: start, targets: plan.targets, plan: serialize(plan), updated_at: new Date().toISOString() }, { onConflict: 'user_id,week_start' }).select('*').single();
     if (r.error) throw r.error;
     MP.row = r.data; MP.plan = hydrate(r.data);
@@ -97,7 +97,7 @@
     if (res.change) {
       var ins = await sb.from('target_proposals').insert({ change: res.change, reason: res.reason, from_kg: res.from, to_kg: res.to });
       if (ins.error && !/duplicate|unique/i.test(ins.error.message)) return;
-      MP.banner = 'Am trimis antrenorului tău o propunere: ' + (res.change > 0 ? '+' : '') + res.change + ' kcal. ' + res.reason + ' Dacă o acceptă, planul se reface singur.';
+      MP.banner = 'Am trimis antrenorului tău o propunere: ' + (res.change > 0 ? '+' : '') + res.change + ' kcal. ' + res.reason + ' Dacă o acceptă, se schimbă doar gramajele; mesele rămân aceleași.';
     } else {
       MP.banner = res.reason;
     }
@@ -105,20 +105,35 @@
     if (!up.error) MP.profile = up.data;
   }
 
+  // planul rămâne același de la o săptămână la alta; când antrenorul schimbă caloriile se schimbă doar gramajele
+  async function savePlanRow(start, plan) {
+    var r = await sb.from('meal_plans').upsert({ week_start: start, targets: plan.targets, plan: serialize(plan), updated_at: new Date().toISOString() }, { onConflict: 'user_id,week_start' }).select('*').single();
+    if (r.error) throw r.error;
+    MP.row = r.data; MP.plan = hydrate(r.data);
+    MP.day = Math.max(0, Math.min(6, daysBetween(start, today())));
+  }
   async function maintain() {
     var t = today();
-    if (!MP.row || daysBetween(MP.row.week_start, t) >= 7) { await newPlan(t); return; }
-    if (!sameTargets(MP.row.targets, MP.targets)) {
-      var old = MP.row.targets;
-      await newPlan(t);
-      MP.banner = 'Antrenorul ți-a actualizat planul' + (old ? ': ' + old.kcal + ' → ' + MP.targets.kcal + ' kcal pe zi' : '') + '. Meniul de mai jos e refăcut de azi.';
-      return;
-    }
+    if (!MP.row || !MP.plan || !MP.plan.days.length) { await newPlan(t); return; }
     if ((MP.plan && MP.plan.menuV || null) !== G.menuKey(MP.menu)) {
       var hadMenu = !!(MP.plan && MP.plan.menuV);
       await newPlan(t);
       MP.banner = MP.menu && hadMenu ? MP.trainer.display_name + ' ți-a actualizat meniul. Mesele și lista de cumpărături de mai jos sunt refăcute.' : MP.menu ? MP.trainer.display_name + (POOL() ? ' ți-a ales alimentele. Din ele ai mai jos mese diferite în fiecare zi, cu gramajele potrivite pentru tine.' : ' ți-a pregătit meniul. Îl găsești mai jos, același în fiecare zi, cu gramajele potrivite pentru tine.') : 'Antrenorul a trecut planul tău pe meniul automat, din rețete. Meniul de mai jos e refăcut de azi.';
       return;
+    }
+    var changed = !sameTargets(MP.row.targets, MP.targets), old = MP.row.targets;
+    var msgCh = changed ? 'Antrenorul ți-a ajustat caloriile' + (old ? ': ' + old.kcal + ' → ' + MP.targets.kcal + ' kcal pe zi' : '') + '. Mesele rămân aceleași; s-au schimbat doar gramajele.' : '';
+    if (daysBetween(MP.row.week_start, t) >= 7) {
+      await savePlanRow(t, G.rollPlan(MP.plan, changed ? T0() : null));
+      if (changed) MP.banner = msgCh;
+      return;
+    }
+    if (changed) {
+      var p = G.retargetPlan(MP.plan, T0());
+      var r = await sb.from('meal_plans').update({ targets: p.targets, plan: serialize(p), updated_at: new Date().toISOString() }).eq('id', MP.row.id).select('*').single();
+      if (r.error) throw r.error;
+      MP.row = r.data; MP.plan = hydrate(r.data);
+      MP.banner = msgCh;
     }
     MP.day = Math.max(0, Math.min(6, daysBetween(MP.row.week_start, t)));
   }
@@ -468,7 +483,7 @@
     var p = MP.plan, T = p.targets, prof = MP.profile, t = today();
     var h = '<div class="mp-tiles"><div class="mp-tile t-kcal"><b>' + T.kcal + '</b><span>kcal pe zi</span></div><div class="mp-tile t-p"><b>' + T.p + ' g</b><span>proteine</span></div><div class="mp-tile t-c"><b>' + T.c + ' g</b><span>carbohidrați</span></div><div class="mp-tile t-f"><b>' + T.f + ' g</b><span>grăsimi</span></div></div>';
     var LOCK = !!(MP.menu && MP.menu.locked);
-    h += '<p class="hint">' + (MP.menu ? (POOL() ? 'Alimentele, caloriile și macro-urile sunt stabilite de ' + esc(MP.trainer.display_name) + '. Mesele se schimbă de la o zi la alta, doar din alimentele alese de ' + esc(MP.trainer.display_name) + '.' : 'Meniul, caloriile și macro-urile sunt stabilite de ' + esc(MP.trainer.display_name) + '. Meniul e același în fiecare zi.') : 'Caloriile și macro-urile sunt stabilite de ' + esc(MP.trainer.display_name) + '. Meniul se reface singur în fiecare săptămână.') + '</p>';
+    h += '<p class="hint">' + (MP.menu ? (POOL() ? 'Alimentele, caloriile și macro-urile sunt stabilite de ' + esc(MP.trainer.display_name) + '. Mesele se schimbă de la o zi la alta, doar din alimentele alese de ' + esc(MP.trainer.display_name) + '.' : 'Meniul, caloriile și macro-urile sunt stabilite de ' + esc(MP.trainer.display_name) + '. Meniul e același în fiecare zi.') : 'Caloriile și macro-urile sunt stabilite de ' + esc(MP.trainer.display_name) + '. Planul rămâne același de la o săptămână la alta; dacă vrei mese noi, cere-i lui ' + esc(MP.trainer.display_name) + '.') + '</p>';
     if (MP.banner) h += '<div class="mp-banner">' + esc(MP.banner) + '</div>';
     (p.warnings || []).forEach(function (w) { h += '<div class="mp-warn">' + esc(w) + '</div>'; });
     if (MP.flash) { h += '<div class="mp-banner">' + esc(MP.flash) + '</div>'; MP.flash = ''; }
@@ -501,7 +516,7 @@
       h += '<p class="hint">' + (LOCK ? '' : 'Apasă pe un ingredient ca să-l înlocuiești. ') + 'Bifează mesele pe măsură ce le mănânci: dacă mănânci altceva, mesele rămase se recalculează pe ce mai ai de mâncat. Gramajele sunt pentru alimentele crude, dacă nu scrie altfel.</p>';
     }
     var ex = (prof.answers.exclude || []);
-    h += '<div class="mp-actions">' + (MP.menu && (!POOL() || MP.menu.locked) ? '' : '<button type="button" data-mp="again">Alt meniu pentru săptămâna asta</button>') + '<button type="button" data-mp="edit">Modifică preferințele</button></div>';
+    h += '<div class="mp-actions"><button type="button" data-mp="edit">Modifică preferințele</button></div>';
     if (ex.length) h += '<p class="hint" style="margin-top:14px">Nu mănânci: ' + ex.map(function (id) { return esc(fname(id).toLowerCase()); }).join(', ') + '. Poți schimba asta din „Modifică preferințele”.</p>';
     return h;
   }

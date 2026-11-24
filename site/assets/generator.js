@@ -204,6 +204,8 @@
           if (!cands.length) { warnings.push('Nu am găsit rețete pentru ' + sl[1] + '.'); continue; }
           var scored = cands.map(function (rec) { return { rec: rec, m: buildMeal(rec, MT) }; });
           if ((!q.diet || q.diet === 'clasic') && sl[0] === 'pc') scored.forEach(function (x) { if (x.rec.r.veg) x.m.err += 0.025; });
+          // Soft antrenori: „plan nou” -> rețetele din planul de dinainte trec la coada listei
+          if (opts.avoid && opts.avoid.length) scored.forEach(function (x) { if (opts.avoid.indexOf(x.rec.r.id) >= 0) x.m.err += 0.08; });
           scored.sort(function (a, b) { return a.m.err - b.m.err; });
           var top = scored.slice(0, Math.max(1, Math.min(5, Math.ceil(scored.length / 4))));
           var pick = top[Math.floor(rand() * top.length)];
@@ -748,6 +750,60 @@
     return ing.map(function (it) { var rd = roundIng(it, { p: 1, c: 1, f: 1, v: 1 }); return { id: it.id, g: rd.g, label: rd.label, x: it.x }; });
   }
   function itemsMacros(items) { var t = zero(); items.forEach(function (i) { if (i.x) add(t, macroOf(i.x, +i.g || 0)); }); return t; }
+
+  // ---- Soft antrenori: planul rămâne același; se schimbă doar gramajele ----
+  // aduce o masă la ținta MT păstrând exact aceleași alimente (pornește de la gramajele din plan, nu de la cele reechilibrate în zi)
+  function retargetMeal(m, MT) {
+    var base = (m.planItems || m.items).filter(function (i) { return i.x; });
+    var ing = base.map(function (i) { return { id: i.id, name: i.name, g: Math.max(1, +i.g || 1), role: i.role || role(i.x), x: i.x }; });
+    if (ing.length && MT.kcal > 0) {
+      for (var pass = 0; pass < 4; pass++) {
+        var f = fit({ ing: ing }, MT, true);
+        ing.forEach(function (it) { it.g = it.g * f.s[it.role]; });
+        var got = sumMacros(ing);
+        if (Math.abs(got.kcal - MT.kcal) <= MT.kcal * 0.02) break;
+        if (pass === 3 || f.err > 0.3) { var k = MT.kcal / Math.max(1, got.kcal); ing.forEach(function (it) { it.g *= k; }); }
+      }
+    }
+    m.items = ing.map(function (it) {
+      var rd = roundIng(it, { p: 1, c: 1, f: 1, v: 1 });
+      return { id: it.id, name: it.name || it.x.name.replace(/ \(1 .*?\)$/, ''), g: rd.g, label: rd.label, x: it.x, role: it.role };
+    });
+    delete m.planItems; delete m.planKcal; m.changed = 0; m.target = MT;
+    return recomputeMeal(m);
+  }
+  // aceleași mese, aceleași alimente; gramajele fiecărei zile se potrivesc pe noile ținte (mesele deja bifate rămân cum au fost)
+  function retargetPlan(plan, targetsIn) {
+    var T = fixedTargets(targetsIn);
+    plan.days.forEach(function (d) {
+      var n = d.meals.length, tot = zero();
+      d.meals.forEach(function (m, si) {
+        var rest = 0; for (var j = si; j < n; j++) rest += shareOf(d.meals[j], n);
+        var sh = shareOf(m, n) / (rest || 1);
+        var MT = { kcal: (T.kcal - tot.kcal) * sh, p: Math.max(5, (T.p - tot.p) * sh), c: Math.max(0, (T.c - tot.c) * sh), f: Math.max(2, (T.f - tot.f) * sh) };
+        if (!m.status) retargetMeal(m, MT);
+        add(tot, m.status ? (m.macros || zero()) : m.macros);
+      });
+    });
+    plan.targets = T;
+    refreshPlan(plan);
+    plan.days.forEach(function (d, di) { if ((d.extra && d.extra.length) || d.meals.some(function (m) { return m.status; })) rebalanceDay(plan, di); });
+    return plan;
+  }
+  // săptămâna următoare: același plan, de la zero (fără mese bifate, fără „în plus”, lista de cumpărături nebifată)
+  function rollPlan(plan, targetsIn) {
+    var next = { targets: plan.targets, warnings: plan.warnings || [], checked: {}, seedN: plan.seedN || 0, menuV: plan.menuV || null, since: plan.since || null,
+      days: plan.days.map(function (d) {
+        return { extra: [], meals: d.meals.map(function (m) {
+          var c = Object.assign({}, m);
+          c.items = (m.planItems || m.items).map(function (i) { return Object.assign({}, i); });
+          delete c.planItems; delete c.planKcal; delete c.status; delete c.actual; c.changed = 0;
+          return recomputeMeal(c);
+        }) };
+      }) };
+    if (targetsIn) return retargetPlan(next, targetsIn);
+    return refreshPlan(next);
+  }
   function menuRecipes(menu) {
     return (menu.meals || []).map(function (m, k) {
       return { id: 'tm' + k, name: m.name || m.slot, meal: m.type || 'pc', min: 0, steps: m.note ? [m.note] : [], cond: null, veg: false, lf: false, trainer: true, ing: [] };
@@ -933,6 +989,6 @@
     mealAlternatives: mealAlternatives, replaceMeal: replaceMeal, excludeFood: excludeFood,
     refreshPlan: refreshPlan, recomputeMeal: recomputeMeal,
     MIN_MEAL: MIN_MEAL, foodEntry: foodEntry, manualEntry: manualEntry, eatenOf: eatenOf, rebalanceDay: rebalanceDay,
-    per100Entry: per100Entry, markMeal: markMeal, roleOf: role, fitItems: fitItems, itemsMacros: itemsMacros, menuFood: menuFood, menuSlots: menuSlots, menuMealTargets: menuMealTargets, menuRecipes: menuRecipes, menuKey: menuKey, menuPlan: menuPlan, poolPlan: poolPlan, poolKind: poolKind, POOL_KINDS: POOL_KINDS, poolFor: poolFor, autoName: autoName, addExtra: addExtra, removeExtra: removeExtra, searchFoods: searchFoods };
+    per100Entry: per100Entry, markMeal: markMeal, roleOf: role, fitItems: fitItems, itemsMacros: itemsMacros, menuFood: menuFood, menuSlots: menuSlots, menuMealTargets: menuMealTargets, menuRecipes: menuRecipes, menuKey: menuKey, menuPlan: menuPlan, retargetPlan: retargetPlan, rollPlan: rollPlan, poolPlan: poolPlan, poolKind: poolKind, POOL_KINDS: POOL_KINDS, poolFor: poolFor, autoName: autoName, addExtra: addExtra, removeExtra: removeExtra, searchFoods: searchFoods };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.CosfitGen = api;
 })(this);
