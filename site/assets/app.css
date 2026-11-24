@@ -396,3 +396,12 @@ main.narrow > .card::before, main.narrow > section.card::before { content: ""; p
 .onb-list li.cur .onb-dot { border-color: #2448FF; color: #2448FF; }
 .onb-list li.ok .onb-dot { background: #2448FF; border-color: #2448FF; color: #fff; }
 .onb-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+/* planul clientului, văzut de antrenor */
+.pv-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; }
+.pv-day { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 14px 0 8px; font-size: .95rem; }
+.pv-day span { color: var(--muted); font-size: .875rem; }
+.pv-meal { border: 1px solid var(--line); border-radius: 16px; padding: 14px; margin-bottom: 10px; background: #fff; }
+.pv-shop label { display: flex; justify-content: space-between; gap: 10px; padding: 9px 2px; border-bottom: 1px solid var(--line); }
+.pv-shop label.done span { text-decoration: line-through; color: var(--muted); }
+.pv-shop em { font-style: normal; color: var(--muted); white-space: nowrap; }

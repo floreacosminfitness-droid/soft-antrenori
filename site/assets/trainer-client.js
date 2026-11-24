@@ -154,7 +154,7 @@
     h += '<section class="card"><h2>Caloriile și macro-urile clientului</h2>' + editorHtml() +
       waterFieldHtml() +
       '<p id="teMsg" class="msg" hidden></p><button type="button" class="btn btn-block" data-act="save">' + (t ? 'Salvează și refă planul clientului' : 'Salvează și trimite planul') + '</button>' +
-      '<p class="muted small" style="margin:10px 0 0">Clientul primește planul pe noile cifre data viitoare când deschide contul.</p></section>';
+      '<p class="muted small" style="margin:10px 0 0">Planul se face imediat. Îl vezi mai jos, la „Planul lui ' + esc(c.full_name.split(/\s+/)[0]) + '”, exact cum îl primește clientul.</p></section>';
     $('tcMain').innerHTML = h;
     $('teOut').innerHTML = outHtml();
   }
@@ -250,6 +250,7 @@
     if (S.onSaved) S.onSaved(S.client.id, res.data);
     if (window.MenuEditor) MenuEditor.setTargets(res.data);
     render();
+    if (window.PlanView) PlanView.refresh({ saved: true });
     App.msg($('teMsg'), 'Salvat. ' + S.client.full_name.split(/\s+/)[0] + ' primește planul pe ' + res.data.kcal + ' kcal.', 'ok');
   }
 
@@ -266,6 +267,7 @@
       S.targets = up.data; fillEditor(up.data);
       if (S.onSaved) S.onSaved(S.client.id, up.data);
       if (window.MenuEditor) MenuEditor.setTargets(up.data);
+      if (window.PlanView) PlanView.refresh({ saved: true });
     }
     var r = await sb.from('target_proposals').update({ status: to }).eq('id', id).select('*').single();
     if (r.error) { btn.disabled = false; return alertMsg(App.ro(r.error)); }
@@ -305,10 +307,11 @@
     };
     if (t) { fillEditor(t, (t.calc && t.calc.mode) || 'pct'); S.lastGood = { kcal: t.kcal, p: t.p, c: t.c, f: t.f }; }
     else { var sug = suggestion(); fillEditor(sug ? { kcal: sug.kcal, p: sug.p, c: sug.c, f: sug.f } : { kcal: 2000, p: 150, c: 200, f: 65 }, 'pct'); }
-    root.innerHTML = '<div id="tcMain"></div><div id="tcChat" style="margin-top:16px"></div><div id="tcMenu" style="margin-top:16px"></div><div id="tcEvo" class="stack" style="margin-top:16px"></div>';
+    root.innerHTML = '<div id="tcMain"></div><div id="tcPlan" style="margin-top:16px"></div><div id="tcChat" style="margin-top:16px"></div><div id="tcMenu" style="margin-top:16px"></div><div id="tcEvo" class="stack" style="margin-top:16px"></div>';
     bind(); render();
     MenuEditor.mount($('tcMenu'), { me: me, client: client, targets: t, profile: q[0].data });
     var inactive = me.billing && me.billing.active === false;
+    if (window.PlanView) PlanView.mount($('tcPlan'), { client: client, canEdit: !inactive });
     Chat.mount($('tcChat'), { clientId: client.id, asTrainer: true, otherName: client.full_name, readOnly: inactive ? 'Ca să-i scrii clientului, alege un abonament (proba sau abonamentul s-au încheiat).' : null });
     // evoluția: graficul greutății și check-in-urile (se desenează o singură dată)
     $('tcEvo').innerHTML = '<section class="card"><h2>Greutate</h2>' + (ws.length ? App.lineChart(ws.map(function (x) { return { d: x.measured_on, v: +x.weight_kg }; }), 'kg', 'Greutatea clientului') : '<p class="muted small" style="margin:0">Clientul nu și-a notat încă greutatea.</p>') + '</section><div id="tcWater">' + waterHistHtml() + '</div><div id="tcCk"></div>';

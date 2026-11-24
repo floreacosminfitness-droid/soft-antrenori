@@ -286,7 +286,8 @@
     if (r.error) return msg(App.ro(r.error));
     E.row = r.data; E.editing = false; E.draft = null; E.search = {};
     render();
-    msg('Salvat. ' + E.client.full_name.split(/\s+/)[0] + ' vede meniul tău data viitoare când deschide contul.', 'ok');
+    msg('Salvat. Planul lui ' + E.client.full_name.split(/\s+/)[0] + ' e refăcut pe meniul tău; îl vezi mai sus.', 'ok');
+    if (window.PlanView) PlanView.refresh({ saved: true });
   }
   async function del(btn) {
     btn.disabled = true;
@@ -294,6 +295,7 @@
     btn.disabled = false;
     if (r.error) return msg(App.ro(r.error));
     E.row = null; E.confirmDel = false; render();
+    if (window.PlanView) PlanView.refresh({ saved: true });
   }
 
   function bind() {
