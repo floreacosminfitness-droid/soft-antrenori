@@ -127,6 +127,13 @@
     d.meals.forEach(function (m) { var x = m.macros || {}; t.kcal += x.kcal || 0; t.p += x.p || 0; t.c += x.c || 0; t.f += x.f || 0; });
     return t;
   }
+  // modul de preparare, la fel ca în aplicația clientului
+  function stepsHtml(m) {
+    var steps = G.stepsOf(m);
+    if (!steps.length && !m.recipe.cond) return '';
+    if (m.recipe.trainer) return '<p class="mp-cond"><b>Indicații:</b> ' + steps.map(esc).join(' ') + '</p>';
+    return '<details><summary>Cum se prepară</summary><ol>' + steps.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>' + (m.recipe.cond ? '<p class="mp-cond">Condimente: ' + esc(m.recipe.cond) + '</p>' : '') + '</details>';
+  }
   // schimbarea unei singure mese (doar la meniul automat; la meniul făcut de antrenor se schimbă din editorul de meniu)
   function canSwap() { return V.canEdit && !V.menu; }
   function altHtml(m, mi, st) {
@@ -186,6 +193,7 @@
           '<ul class="mp-ing is-locked">' + m.items.map(function (it) { return '<li><span>' + esc(it.name) + '</span><span>' + (it.label ? esc(it.label) + ' · ' : '') + it.g + ' g</span></li>'; }).join('') + '</ul>' +
           (m.swaps ? '<p class="mp-swapped">Înlocuit de client: ' + m.swaps.map(esc).join(', ') + '</p>' : '') +
           (st === 'other' && m.actual ? '<p class="mp-swapped">A mâncat: ' + m.actual.map(function (e) { return esc(e.name) + (e.g ? ' ' + R(e.g) + ' g' : ''); }).join(', ') + '</p>' : '') +
+          stepsHtml(m) +
           altHtml(m, mi, st) +
           '</article>';
       });
