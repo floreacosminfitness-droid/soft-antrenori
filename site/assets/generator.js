@@ -595,7 +595,7 @@
     var near = {};
     plan.days.forEach(function (d, k) { if (Math.abs(k - di) < CONFIG.noRepeatDays) d.meals.forEach(function (x) { near[x.recipe.id] = 1; }); });
     var cands = db.recipes.filter(function (rec) { return rec.r.meal === m.type && !near[rec.r.id] && allowed(rec, q); });
-    if (cands.length < 3) cands = db.recipes.filter(function (rec) { return rec.r.meal === m.type && rec.r.id !== m.recipe.id && allowed(rec, q); });
+    if (cands.length < 3) cands = db.recipes.filter(function (rec) { return rec.r.meal === m.type && !day.meals.some(function (x) { return x.recipe.id === rec.r.id; }) && allowed(rec, q); });
     var scored = cands.map(function (rec) { var b = buildMeal(rec, T); b.slot = m.slot; b.type = m.type; b.target = T; return b; });
     scored.sort(function (a, b) { return a.err - b.err; });
     return scored.slice(0, opts.n || 3);

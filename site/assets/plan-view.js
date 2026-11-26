@@ -1,4 +1,4 @@
-// Planul clientului, văzut de antrenor (doar citire).
+// Planul clientului, văzut de antrenor (poate schimba o masă sau face un plan nou).
 // Arată planul salvat al clientului: exact ce vede el, cu mesele bifate și înlocuirile lui.
 // Dacă planul nu mai corespunde caloriilor sau meniului setat (sau nu există încă), îl face și îl salvează
 // chiar aici, cu același motor și aceeași regulă ca aplicația clientului, ca să vadă amândoi același plan.
@@ -127,6 +127,32 @@
     d.meals.forEach(function (m) { var x = m.macros || {}; t.kcal += x.kcal || 0; t.p += x.p || 0; t.c += x.c || 0; t.f += x.f || 0; });
     return t;
   }
+  // schimbarea unei singure mese (doar la meniul automat; la meniul făcut de antrenor se schimbă din editorul de meniu)
+  function canSwap() { return V.canEdit && !V.menu; }
+  function altHtml(m, mi, st) {
+    if (!canSwap() || st) return '';
+    if (V.alt !== mi) return '<div class="mp-tools"><button type="button" data-pvalt="' + mi + '">Schimbă doar masa asta</button></div>';
+    return '<div class="mp-box"><p>Alege altă rețetă (cam ' + R(m.macros.kcal) + ' kcal). Gramajele se potrivesc singure, restul zilei rămâne la fel:</p><div class="mp-opts mp-opts--col">' +
+      V.alts.map(function (a, k) { return '<button type="button" class="mp-opt" data-pvpick="' + k + '"><span>' + esc(a.recipe.name) + '</span><small><span class="k">' + R(a.macros.kcal) + ' kcal</span> · <span class="p">' + R(a.macros.p) + ' P</span> · <span class="c">' + R(a.macros.c) + ' C</span> · <span class="f">' + R(a.macros.f) + ' G</span> · ' + a.recipe.min + ' min</small></button>'; }).join('') +
+      (V.alts.length ? '' : '<p class="muted small">Nu am găsit alte rețete potrivite pentru masa asta.</p>') +
+      '</div><div class="mp-tools"><button type="button" class="muted" data-pvalt="close">Renunță</button></div></div>';
+  }
+  function openAlts(mi) {
+    var a = V.answers;
+    V.alt = mi;
+    V.alts = G.mealAlternatives(V.content, V.plan, V.day, mi, Object.assign({}, a, { exclude: (a.exclude || []).slice() }), { prepared: V.db, n: 5 });
+  }
+  async function pickAlt(k) {
+    var d = V.plan.days[V.day], old = d.meals[V.alt], nw = V.alts[k];
+    G.replaceMeal(V.plan, V.day, V.alt, nw);
+    if ((d.extra && d.extra.length) || d.meals.some(function (x) { return x.status; })) G.rebalanceDay(V.plan, V.day);
+    var r = await sb.from('meal_plans').update({ plan: serialize(V.plan), updated_at: new Date().toISOString() }).eq('id', V.row.id).select('*').single();
+    if (r.error) throw r.error;
+    V.row = r.data; V.plan = hydrate(V.row);
+    var dn = DAYS[new Date(addDays(V.row.week_start, V.day) + 'T12:00:00Z').getUTCDay()].toLowerCase();
+    V.flash = '„' + (old.name || old.recipe.name) + '” de ' + dn + ' a fost înlocuită cu „' + nw.recipe.name + '”. ' + V.client.full_name.split(/\s+/)[0] + ' o vede imediat în aplicație.';
+    V.alt = null; V.alts = null; V.made = '';
+  }
   function render() {
     var el = V.el, first = V.client.full_name.split(/\s+/)[0];
     var h = '<section class="card pv"><div class="pv-head"><h2 style="margin:0">Planul lui ' + esc(first) + '</h2>';
@@ -139,6 +165,7 @@
     var since = p.since || start, age = daysBetween(since, t);
     h += '<p class="muted small" style="margin:6px 0 12px">Exact ce vede ' + esc(first) + ' în aplicație, cu mesele bifate și înlocuirile făcute de el. Același plan din ' + fmtDate(since) + ' (' + (age < 1 ? 'de azi' : age === 1 ? 'de o zi' : 'de ' + age + ' zile') + ').</p>';
     if (V.made === 'retarget') h += '<div class="mp-banner">Caloriile s-au schimbat: mesele și alimentele au rămas aceleași, doar gramajele s-au potrivit pe ' + p.targets.kcal + ' kcal.</div>';
+    if (V.flash) h += '<div class="mp-banner">' + esc(V.flash) + '</div>';
     if (V.made === 'new' && V.fresh) h += '<div class="mp-banner">Gata, ' + esc(first) + ' are un plan nou, cu alte mese, pe aceleași calorii.</div>';
     (p.warnings || []).forEach(function (w) { h += '<div class="mp-warn">' + esc(w) + '</div>'; });
     h += '<div class="mp-days" role="tablist">';
@@ -159,6 +186,7 @@
           '<ul class="mp-ing is-locked">' + m.items.map(function (it) { return '<li><span>' + esc(it.name) + '</span><span>' + (it.label ? esc(it.label) + ' · ' : '') + it.g + ' g</span></li>'; }).join('') + '</ul>' +
           (m.swaps ? '<p class="mp-swapped">Înlocuit de client: ' + m.swaps.map(esc).join(', ') + '</p>' : '') +
           (st === 'other' && m.actual ? '<p class="mp-swapped">A mâncat: ' + m.actual.map(function (e) { return esc(e.name) + (e.g ? ' ' + R(e.g) + ' g' : ''); }).join(', ') + '</p>' : '') +
+          altHtml(m, mi, st) +
           '</article>';
       });
       (d.extra || []).forEach(function (e) { h += '<div class="mp-meal pv-meal is-done"><div class="mp-mhead"><div><div class="mp-slot">În plus</div><h3>' + esc(e.name) + (e.g ? ' · ' + R(e.g) + ' g' : '') + '</h3></div></div>' + nutHtml(e) + '</div>'; });
@@ -166,7 +194,7 @@
     if (V.canEdit) {
       h += '<div class="pv-new">' + (V.ask
         ? '<p class="small" style="margin:0 0 10px"><b>Sigur faci un plan nou?</b> ' + esc(first) + ' primește alte mese pentru toată săptămâna' + (age < 7 ? ', deși planul actual are doar ' + (age < 1 ? 'o zi' : age + ' zile') + '. De obicei merită schimbat după cel puțin o săptămână.' : '.') + ' Caloriile și macro-urile rămân aceleași.</p><div class="row"><button type="button" class="btn btn-sm" data-pv="new">Da, fă un plan nou</button><button type="button" class="btn btn-ghost btn-sm" data-pv="cancel">Renunț</button></div>'
-        : '<button type="button" class="btn btn-ghost btn-sm" data-pv="ask">Fă un plan nou, cu alte mese</button><p class="muted small" style="margin:8px 0 0">Doar dacă ți-o cere clientul. Altfel planul rămâne același, iar când schimbi caloriile se ajustează doar gramajele.</p>') + '</div>';
+        : '<button type="button" class="btn btn-ghost btn-sm" data-pv="ask">Fă un plan nou, cu alte mese</button><p class="muted small" style="margin:8px 0 0">Doar dacă ți-o cere clientul. Altfel planul rămâne același, iar când schimbi caloriile se ajustează doar gramajele.' + (canSwap() ? ' Pentru o singură masă, folosește „Schimbă doar masa asta” de sub ea.' : '') + '</p>') + '</div>';
     }
     h += '</section>';
     el.innerHTML = h;
@@ -175,7 +203,7 @@
   async function refresh(opts) {
     if (!V) return;
     opts = opts || {};
-    V.state = 'loading'; V.made = ''; V.fresh = false; V.ask = false; if (!opts.quiet) render();
+    V.state = 'loading'; V.made = ''; V.fresh = false; V.ask = false; V.alt = null; V.alts = null; if (!opts.keepFlash) V.flash = ''; if (!opts.quiet) render();
     try {
       await loadAll();
       if (V.answers && V.targets) {
@@ -200,7 +228,19 @@
     V = { el: el, client: opts.client, canEdit: opts.canEdit !== false, content: null, day: null, state: 'loading' };
     el.onclick = function (e) {
       var d = e.target.closest('[data-pvday]');
-      if (d) { var v = d.getAttribute('data-pvday'); V.day = v === 'shop' ? 'shop' : +v; render(); return; }
+      if (d) { var v = d.getAttribute('data-pvday'); V.day = v === 'shop' ? 'shop' : +v; V.alt = null; V.flash = ''; render(); return; }
+      var ab = e.target.closest('[data-pvalt]');
+      if (ab) { var av = ab.getAttribute('data-pvalt'); if (av === 'close' || V.alt === +av) { V.alt = null; } else { V.flash = ''; openAlts(+av); } return render(); }
+      var pk = e.target.closest('[data-pvpick]');
+      if (pk) {
+        if (V.busy) return; V.busy = true; pk.disabled = true;
+        (async function () {
+          try { await pickAlt(+pk.getAttribute('data-pvpick')); }
+          catch (err) { V.alt = null; V.flash = 'Nu am putut salva: ' + App.ro(err); }
+          V.busy = false; render();
+        })();
+        return;
+      }
       if (e.target.closest('[data-pv=retry]')) return refresh();
       if (e.target.closest('[data-pv=ask]')) { V.ask = true; return render(); }
       if (e.target.closest('[data-pv=cancel]')) { V.ask = false; return render(); }
@@ -208,7 +248,7 @@
       if (nb) {
         nb.disabled = true;
         (async function () {
-          try { await makePlan(((V.row && V.row.plan && V.row.plan.seedN) || 0) + 1); V.plan = hydrate(V.row); V.made = 'new'; V.fresh = true; V.ask = false; V.day = 0; render(); }
+          try { await makePlan(((V.row && V.row.plan && V.row.plan.seedN) || 0) + 1); V.plan = hydrate(V.row); V.made = 'new'; V.fresh = true; V.ask = false; V.day = 0; V.flash = ''; render(); }
           catch (err) { V.ask = false; V.state = 'error'; V.err = App.ro(err); render(); }
         })();
       }
